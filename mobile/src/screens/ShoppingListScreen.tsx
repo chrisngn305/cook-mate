@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -90,7 +91,13 @@ export default function ShoppingListScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Shopping List</Text>
-        <TouchableOpacity style={styles.generateButton}>
+        <TouchableOpacity 
+          style={styles.generateButton}
+          onPress={() => {
+            // TODO: Implement generate from recipes functionality
+            Alert.alert('Coming Soon', 'Generate shopping list from recipes feature will be available soon!');
+          }}
+        >
           <Ionicons name="add-circle" size={24} color={colors.surface} />
         </TouchableOpacity>
       </View>

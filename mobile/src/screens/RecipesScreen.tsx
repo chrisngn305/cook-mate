@@ -6,12 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
 
 export default function RecipesScreen() {
+  const navigation = useNavigation<any>();
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
 
   const filters = [
@@ -50,12 +53,53 @@ export default function RecipesScreen() {
       cuisine: 'Mexican',
       image: null,
     },
+    {
+      id: '4',
+      title: 'Beef Stew',
+      description: 'Slow-cooked hearty stew',
+      cookingTime: 120,
+      difficulty: 'hard',
+      cuisine: 'American',
+      image: null,
+    },
+    {
+      id: '5',
+      title: 'Quick Salad',
+      description: 'Fresh and healthy salad',
+      cookingTime: 10,
+      difficulty: 'easy',
+      cuisine: 'Mediterranean',
+      image: null,
+    },
   ];
 
+  // Filter recipes based on selected filter
+  const filteredRecipes = recipes.filter(recipe => {
+    if (!selectedFilter || selectedFilter === 'all') {
+      return true;
+    }
+    
+    if (selectedFilter === 'quick') {
+      return recipe.cookingTime <= 30; // Quick recipes are 30 minutes or less
+    }
+    
+    return recipe.difficulty === selectedFilter;
+  });
+
   const renderRecipeCard = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.recipeCard}>
+    <TouchableOpacity 
+      style={styles.recipeCard}
+      onPress={() => navigation.navigate('RecipeDetail', { 
+        recipeId: item.id,
+        recipeTitle: item.title 
+      })}
+    >
       <View style={styles.recipeImage}>
-        <Ionicons name="restaurant" size={32} color={colors.primary} />
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.recipeImage} />
+        ) : (
+          <Ionicons name="restaurant" size={32} color={colors.primary} />
+        )}
       </View>
       <View style={styles.recipeContent}>
         <Text style={styles.recipeTitle}>{item.title}</Text>
@@ -86,7 +130,10 @@ export default function RecipesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Recipes</Text>
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => navigation.navigate('AddRecipe')}
+        >
           <Ionicons name="add" size={24} color={colors.surface} />
         </TouchableOpacity>
       </View>
@@ -118,7 +165,7 @@ export default function RecipesScreen() {
 
       {/* Recipe List */}
       <FlatList
-        data={recipes}
+        data={filteredRecipes}
         renderItem={renderRecipeCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.recipeList}
