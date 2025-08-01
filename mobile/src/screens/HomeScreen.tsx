@@ -206,8 +206,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: spacing.md,
-    ...typography.body,
+    fontSize: 16,
+    lineHeight: 20,
     color: colors.text,
+    textAlignVertical: 'center',
   },
   section: {
     paddingHorizontal: spacing.lg,

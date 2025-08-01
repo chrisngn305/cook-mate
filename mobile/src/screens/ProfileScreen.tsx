@@ -2,9 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
+  
   const profileStats = [
     { label: 'Recipes', value: '24', icon: 'book' },
     { label: 'Favorites', value: '12', icon: 'heart' },
@@ -27,7 +30,10 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
             <Ionicons name="create-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>

@@ -217,8 +217,11 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    ...typography.body,
+    fontSize: 16,
+    lineHeight: 20,
     color: colors.text,
+    minHeight: 40,
+    textAlignVertical: 'center',
   },
   nameInput: {
     flex: 2,

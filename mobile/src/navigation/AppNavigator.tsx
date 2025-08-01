@@ -11,6 +11,8 @@ import ShoppingListScreen from '../screens/ShoppingListScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RecipeDetailScreen from '../screens/RecipeDetailScreen';
 import AddRecipeScreen from '../screens/AddRecipeScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import { colors } from '../theme';
 
 export type RootStackParamList = {
@@ -18,6 +20,8 @@ export type RootStackParamList = {
   RecipeDetail: { recipeId: string; recipeTitle: string };
   AddRecipe: undefined;
   EditRecipe: { recipeId: string };
+  EditProfile: undefined;
+  ChangePassword: undefined;
 };
 
 export type MainTabParamList = {
@@ -82,6 +86,8 @@ export default function AppNavigator() {
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
         <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

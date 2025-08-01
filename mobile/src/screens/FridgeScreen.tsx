@@ -326,8 +326,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginRight: spacing.md,
-    ...typography.body,
+    fontSize: 16,
+    lineHeight: 20,
     color: colors.text,
+    minHeight: 40,
+    textAlignVertical: 'center',
   },
   addButton: {
     backgroundColor: colors.primary,
