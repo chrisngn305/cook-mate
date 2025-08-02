@@ -1,15 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { useProfile } from '../services/hooks';
 import { useAuth } from '../contexts/AuthContext';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { logout } = useAuth();
+  const { showConfirmation, showError, popupConfig, isVisible, hidePopup } = usePopup();
   
   // Fetch user profile from API
   const { data: user, isLoading, error } = useProfile();
@@ -31,23 +34,17 @@ export default function ProfileScreen() {
   ];
 
   const handleLogout = async () => {
-    Alert.alert(
+    showConfirmation(
       'Logout',
       'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          }
+      async () => {
+        try {
+          await logout();
+        } catch (error) {
+          showError('Error', 'Failed to logout. Please try again.');
         }
-      ]
+      },
+      () => {}
     );
   };
 

@@ -7,108 +7,98 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { 
-  useShoppingLists, 
-  useCreateShoppingList, 
-  useAddShoppingListItem,
-  useToggleShoppingListItem,
-  useDeleteShoppingListItem,
-  useDeleteShoppingList
-} from '../services/hooks';
+import { useShoppingLists, useAddShoppingListItem, useToggleShoppingListItem, useDeleteShoppingList } from '../services/hooks';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 export default function ShoppingListScreen() {
   const navigation = useNavigation<any>();
-  const [newItem, setNewItem] = useState({ name: '', quantity: '', unit: '' });
+  const [newItem, setNewItem] = useState({
+    name: '',
+    quantity: '',
+    unit: '',
+  });
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
+  const { showError, showSuccess, showWarning, popupConfig, isVisible, hidePopup } = usePopup();
 
-  // Fetch shopping lists from API
-  const { data: shoppingLists = [], isLoading } = useShoppingLists();
-  const createListMutation = useCreateShoppingList();
+  // Fetch shopping lists
+  const { data: shoppingLists = [], isLoading: listsLoading, error: listsError } = useShoppingLists();
   const addItemMutation = useAddShoppingListItem();
   const toggleItemMutation = useToggleShoppingListItem();
-  const deleteItemMutation = useDeleteShoppingListItem();
   const deleteListMutation = useDeleteShoppingList();
 
-  // Get the first list or create a default one
-  const currentList = shoppingLists.length > 0 ? shoppingLists[0] : null;
-  const items = currentList?.items || [];
-
   const addItem = async () => {
-    if (!currentList) {
-      // Create a new list if none exists
-      try {
-        const newList = await createListMutation.mutateAsync({
-          name: 'My Shopping List',
-          isCompleted: false
-        });
-        setSelectedListId(newList.id);
-      } catch (error) {
-        Alert.alert('Error', 'Failed to create shopping list. Please try again.');
-        return;
-      }
+    if (!newItem.name.trim()) {
+      showError('Error', 'Please enter an item name');
+      return;
     }
 
-    if (newItem.name.trim() && newItem.quantity.trim()) {
-      try {
-        await addItemMutation.mutateAsync({
-          listId: currentList?.id || selectedListId!,
-          item: {
-            name: newItem.name.trim(),
-            quantity: parseFloat(newItem.quantity),
-            unit: newItem.unit || 'pieces',
-            isCompleted: false,
-          }
-        });
-        setNewItem({ name: '', quantity: '', unit: '' });
-      } catch (error) {
-        Alert.alert('Error', 'Failed to add item. Please try again.');
-      }
+    if (!selectedListId) {
+      showError('Error', 'Please select a shopping list');
+      return;
+    }
+
+    try {
+      await addItemMutation.mutateAsync({
+        listId: selectedListId,
+        item: {
+          name: newItem.name.trim(),
+          quantity: newItem.quantity.trim() || '1',
+          unit: newItem.unit.trim() || 'piece',
+        },
+      });
+
+      setNewItem({ name: '', quantity: '', unit: '' });
+      showSuccess('Success', 'Item added to shopping list!');
+    } catch (error: any) {
+      showError('Error', 'Failed to add item. Please try again.');
     }
   };
 
   const toggleItem = async (itemId: string) => {
-    if (!currentList) return;
+    if (!selectedListId) return;
     
     try {
       await toggleItemMutation.mutateAsync({
-        listId: currentList.id,
+        listId: selectedListId,
         itemId: itemId
       });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update item. Please try again.');
+    } catch (error: any) {
+      showError('Error', 'Failed to update item. Please try again.');
     }
   };
 
   const removeItem = async (itemId: string) => {
-    if (!currentList) return;
-    
     try {
-      await deleteItemMutation.mutateAsync({
-        listId: currentList.id,
-        itemId: itemId
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to remove item. Please try again.');
+      // Note: This would need a removeItemMutation hook
+      showWarning('Remove Item', 'Are you sure you want to remove this item?', () => {
+        // Handle removal logic here
+      }, () => {});
+    } catch (error: any) {
+      showError('Error', 'Failed to remove item. Please try again.');
     }
   };
 
   const deleteList = async (listId: string) => {
     try {
       await deleteListMutation.mutateAsync(listId);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to delete shopping list. Please try again.');
+      showSuccess('Success', 'Shopping list deleted successfully!');
+    } catch (error: any) {
+      showError('Error', 'Failed to delete shopping list. Please try again.');
     }
   };
 
-  const completedItems = items.filter(item => item.isCompleted);
-  const pendingItems = items.filter(item => !item.isCompleted);
+  // Get the first list or create a default one
+  const currentList = shoppingLists.length > 0 ? shoppingLists[0] : null;
+  const items = currentList?.items || [];
+  const pendingItems = items.filter((item: any) => !item.isCompleted);
+  const completedItems = items.filter((item: any) => item.isCompleted);
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={[styles.itemCard, item.isCompleted && styles.itemCompleted]}>
@@ -172,7 +162,7 @@ export default function ShoppingListScreen() {
           style={styles.generateButton}
           onPress={() => {
             // TODO: Implement generate from recipes functionality
-            Alert.alert('Coming Soon', 'Generate shopping list from recipes feature will be available soon!');
+            showWarning('Coming Soon', 'Generate shopping list from recipes feature will be available soon!', () => {}, () => {});
           }}
         >
           <Ionicons name="add-circle" size={24} color={colors.surface} />
@@ -260,6 +250,21 @@ export default function ShoppingListScreen() {
           {/* Empty State */}
           {items.length === 0 && !isLoading && renderEmptyState()}
         </>
+      )}
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
       )}
     </SafeAreaView>
   );

@@ -3,26 +3,32 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
-  Alert,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 export default function LoginScreen() {
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { showError, showSuccess, popupConfig, isVisible, hidePopup } = usePopup();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showError('Error', 'Please fill in all fields');
       return;
     }
 
@@ -30,7 +36,7 @@ export default function LoginScreen() {
     try {
       await login(email.trim(), password);
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Please check your credentials and try again');
+      showError('Login Failed', error.message || 'Please check your credentials and try again');
     } finally {
       setIsLoading(false);
     }
@@ -39,9 +45,9 @@ export default function LoginScreen() {
   const testConnection = async () => {
     try {
       const recipes = await apiService.getRecipes();
-      Alert.alert('Connection Test', `Success! Found ${recipes.length} recipes. API URL: ${apiService.getApiUrl()}`);
+      showSuccess('Connection Test', `Success! Found ${recipes.length} recipes. API URL: ${apiService.getApiUrl()}`);
     } catch (error: any) {
-      Alert.alert('Connection Test Failed', `Error: ${error.message}\n\nAPI URL: ${apiService.getApiUrl()}`);
+      showError('Connection Test Failed', `Error: ${error.message}\n\nAPI URL: ${apiService.getApiUrl()}`);
     }
   };
 
@@ -113,6 +119,20 @@ export default function LoginScreen() {
           </Text>
         </View>
       </View>
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
+      )}
     </SafeAreaView>
   );
 }

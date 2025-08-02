@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Alert, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Image,
   Dimensions,
   ActivityIndicator
@@ -15,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { useRecipe, useLikeRecipe } from '../services/hooks';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 const { width } = Dimensions.get('window');
 
@@ -53,11 +54,12 @@ export default function RecipeDetailScreen() {
   const route = useRoute<any>();
   const recipeId = route.params?.recipeId || 'unknown';
   const shouldRefresh = route.params?.refreshData;
-  
+
   // Use React Query hooks for data fetching
   const { data: recipe, isLoading, error, refetch } = useRecipe(recipeId);
   const likeRecipeMutation = useLikeRecipe();
-  
+  const { showWarning, popupConfig, isVisible, hidePopup } = usePopup();
+
   const [isLiked, setIsLiked] = useState(false);
   const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -73,25 +75,24 @@ export default function RecipeDetailScreen() {
     try {
       await likeRecipeMutation.mutateAsync(recipeId);
       setIsLiked(!isLiked);
-      // React Query will automatically update the recipe data
     } catch (error) {
       console.error('Failed to like recipe:', error);
     }
   };
 
   const handleShare = () => {
-    Alert.alert('Share', 'Share functionality will be implemented soon!');
+    showWarning('Share', 'Share functionality will be implemented soon!', () => {}, () => {});
   };
 
   const handleAddToShoppingList = () => {
-    Alert.alert('Add to Shopping List', 'This feature will be implemented soon!');
+    showWarning('Add to Shopping List', 'This feature will be implemented soon!', () => {}, () => {});
   };
 
   const handleEditRecipe = () => {
-    navigation.navigate('AddRecipe', { 
-      mode: 'edit', 
+    navigation.navigate('AddRecipe', {
+      mode: 'edit',
       recipeId: recipeId,
-      recipe: recipe 
+      recipe: recipe
     });
   };
 
@@ -153,7 +154,7 @@ export default function RecipeDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
@@ -182,10 +183,10 @@ export default function RecipeDetailScreen() {
             </View>
           )}
           <TouchableOpacity style={styles.likeButton} onPress={handleLike}>
-            <Ionicons 
-              name={isLiked ? "heart" : "heart-outline"} 
-              size={24} 
-              color={isLiked ? colors.error : colors.text} 
+            <Ionicons
+              name={isLiked ? "heart" : "heart-outline"}
+              size={24}
+              color={isLiked ? colors.error : colors.text}
             />
           </TouchableOpacity>
         </View>
@@ -194,7 +195,7 @@ export default function RecipeDetailScreen() {
         <View style={styles.recipeInfo}>
           <Text style={styles.recipeTitle}>{recipe.title}</Text>
           <Text style={styles.recipeDescription}>{recipe.description}</Text>
-          
+
           <View style={styles.recipeStats}>
             <View style={styles.statItem}>
               <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
@@ -211,7 +212,7 @@ export default function RecipeDetailScreen() {
 
         {/* Tab Navigation */}
         <View style={styles.tabContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.tab, activeTab === 'ingredients' && styles.activeTab]}
             onPress={() => setActiveTab('ingredients')}
           >
@@ -219,7 +220,7 @@ export default function RecipeDetailScreen() {
               Ingredients ({recipe.ingredients.length})
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.tab, activeTab === 'steps' && styles.activeTab]}
             onPress={() => setActiveTab('steps')}
           >
@@ -241,11 +242,11 @@ export default function RecipeDetailScreen() {
               </Text>
             </View>
             <View style={styles.progressBar}>
-              <View 
+              <View
                 style={[
-                  styles.progressFill, 
+                  styles.progressFill,
                   { width: `${getProgressPercentage()}%` }
-                ]} 
+                ]}
               />
             </View>
           </View>
@@ -274,8 +275,8 @@ export default function RecipeDetailScreen() {
               {recipe.steps.map((step) => {
                 const isCompleted = completedSteps.has(step.id);
                 return (
-                  <TouchableOpacity 
-                    key={step.id} 
+                  <TouchableOpacity
+                    key={step.id}
                     style={[
                       styles.stepItem,
                       isCompleted && styles.completedStepItem
@@ -301,7 +302,7 @@ export default function RecipeDetailScreen() {
                         {step.description}
                       </Text>
                     </View>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[
                         styles.checkbox,
                         isCompleted && styles.checkedCheckbox
@@ -319,6 +320,21 @@ export default function RecipeDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
+      )}
     </SafeAreaView>
   );
 }

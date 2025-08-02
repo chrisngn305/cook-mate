@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from './CustomPopup';
 
 interface ImageUploadProps {
   imageUri?: string;
@@ -12,15 +14,12 @@ interface ImageUploadProps {
 
 export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe Image' }: ImageUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { showError, showConfirmation, showWarning, popupConfig, isVisible, hidePopup } = usePopup();
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(
-        'Permission Required',
-        'Sorry, we need camera roll permissions to upload images.',
-        [{ text: 'OK' }]
-      );
+      showError('Permission Required', 'Sorry, we need camera roll permissions to upload images.');
       return false;
     }
     return true;
@@ -43,7 +42,7 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
         onImageChange(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      showError('Error', 'Failed to pick image. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -52,11 +51,7 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(
-        'Permission Required',
-        'Sorry, we need camera permissions to take photos.',
-        [{ text: 'OK' }]
-      );
+      showError('Permission Required', 'Sorry, we need camera permissions to take photos.');
       return;
     }
 
@@ -72,32 +67,27 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
         onImageChange(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      showError('Error', 'Failed to take photo. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const removeImage = () => {
-    Alert.alert(
+    showConfirmation(
       'Remove Image',
       'Are you sure you want to remove this image?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => onImageChange(null) },
-      ]
+      () => onImageChange(null),
+      () => {}
     );
   };
 
   const showImageOptions = () => {
-    Alert.alert(
+    showConfirmation(
       'Add Recipe Image',
       'Choose how you want to add an image',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Library', onPress: pickImage },
-      ]
+      () => takePhoto(),
+      () => pickImage()
     );
   };
 
@@ -131,6 +121,21 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
             </>
           )}
         </TouchableOpacity>
+      )}
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
       )}
     </View>
   );

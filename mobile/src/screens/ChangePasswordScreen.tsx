@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 export default function ChangePasswordScreen() {
   const navigation = useNavigation<any>();
@@ -13,6 +15,7 @@ export default function ChangePasswordScreen() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { showError, showSuccess, popupConfig, isVisible, hidePopup } = usePopup();
 
   const validatePassword = (password: string) => {
     const minLength = 8;
@@ -36,40 +39,33 @@ export default function ChangePasswordScreen() {
   const handleChangePassword = () => {
     // Validate current password (in a real app, this would check against the backend)
     if (!currentPassword) {
-      Alert.alert('Error', 'Please enter your current password.');
+      showError('Error', 'Please enter your current password.');
       return;
     }
 
     // Validate new password
     const validation = validatePassword(newPassword);
     if (!validation.isValid) {
-      Alert.alert('Error', 'New password does not meet security requirements.');
+      showError('Error', 'New password does not meet security requirements.');
       return;
     }
 
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match.');
+      showError('Error', 'New passwords do not match.');
       return;
     }
 
     // Check if new password is different from current
     if (currentPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from current password.');
+      showError('Error', 'New password must be different from current password.');
       return;
     }
 
     // Here you would typically make an API call to change the password
-    Alert.alert(
-      'Success',
-      'Password changed successfully!',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    showSuccess('Success', 'Password changed successfully!', () => {
+      navigation.goBack();
+    });
   };
 
   const handleCancel = () => {
@@ -160,6 +156,21 @@ export default function ChangePasswordScreen() {
           <Text style={styles.changePasswordButtonText}>Change Password</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
+      )}
     </SafeAreaView>
   );
 }

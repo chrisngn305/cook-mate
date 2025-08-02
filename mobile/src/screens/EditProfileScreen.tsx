@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import FormInput from '../components/FormInput';
 import { useProfile, useUpdateProfile, useUpdateProfileAvatar } from '../services/hooks';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
@@ -15,6 +17,7 @@ export default function EditProfileScreen() {
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
   const updateAvatarMutation = useUpdateProfileAvatar();
+  const { showSuccess, showError, showConfirmation, popupConfig, isVisible, hidePopup } = usePopup();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -34,7 +37,7 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Name is required');
+      showError('Error', 'Name is required');
       return;
     }
 
@@ -60,19 +63,12 @@ export default function EditProfileScreen() {
         await updateAvatarMutation.mutateAsync(profileImage);
       }
 
-      Alert.alert(
-        'Success',
-        'Profile updated successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      showSuccess('Success', 'Profile updated successfully!', () => {
+        navigation.goBack();
+      });
     } catch (error: any) {
       console.error('Failed to update profile:', error);
-      Alert.alert('Error', error.message || 'Failed to update profile');
+      showError('Error', error.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
@@ -87,11 +83,7 @@ export default function EditProfileScreen() {
       // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera roll permissions to make this work!',
-          [{ text: 'OK' }]
-        );
+        showError('Permission Required', 'Sorry, we need camera roll permissions to make this work!');
         return;
       }
 
@@ -107,7 +99,7 @@ export default function EditProfileScreen() {
         setProfileImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      showError('Error', 'Failed to pick image. Please try again.');
     }
   };
 
@@ -204,6 +196,21 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
+      )}
     </SafeAreaView>
   );
 }

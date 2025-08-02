@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,75 +8,59 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { 
-  useFridgeIngredients, 
-  useAddFridgeIngredient, 
-  useDeleteFridgeIngredient,
-  useSearchRecipesByIngredients 
-} from '../services/hooks';
+import { useFridgeIngredients, useAddFridgeIngredient, useDeleteFridgeIngredient } from '../services/hooks';
+import { useRecipes } from '../services/hooks';
+import { usePopup } from '../hooks/usePopup';
+import CustomPopup from '../components/CustomPopup';
 
 export default function FridgeScreen() {
   const navigation = useNavigation<any>();
   const [newIngredient, setNewIngredient] = useState('');
   const [highlightedIngredient, setHighlightedIngredient] = useState<string | null>(null);
+  const { showError, showSuccess, popupConfig, isVisible, hidePopup } = usePopup();
 
-  // Fetch data from API
+  // Fetch data
   const { data: fridgeIngredients = [], isLoading: fridgeLoading } = useFridgeIngredients();
   const addIngredientMutation = useAddFridgeIngredient();
   const deleteIngredientMutation = useDeleteFridgeIngredient();
+  const { data: recipes = [], isLoading: recipesLoading } = useRecipes();
 
   // Get ingredient names for recipe search
-  const ingredientNames = fridgeIngredients.map(ing => ing.name);
-  const { data: suggestedRecipes = [], isLoading: suggestionsLoading } = useSearchRecipesByIngredients(ingredientNames);
-
-  const allIngredients = [
-    'eggs', 'milk', 'cheese', 'butter', 'rice', 'pasta', 
-    'potatoes', 'carrots', 'bell peppers', 'spinach', 'lemons',
-    'tomatoes', 'onions', 'garlic', 'olive oil', 'bread', 'chicken',
-    'beef', 'pork', 'fish', 'shrimp', 'salmon', 'tuna',
-    'broccoli', 'cauliflower', 'zucchini', 'eggplant', 'mushrooms',
-    'basil', 'oregano', 'thyme', 'rosemary', 'parsley', 'cilantro',
-    'lemon', 'lime', 'orange', 'apple', 'banana', 'strawberries',
-    'cream', 'yogurt', 'sour cream', 'mayonnaise', 'ketchup', 'mustard',
-    'soy sauce', 'vinegar', 'honey', 'sugar', 'flour', 'cornstarch'
-  ];
-
-  // Filter ingredients based on search query
-  const filteredIngredients = allIngredients.filter(ingredient =>
-    ingredient.toLowerCase().includes(newIngredient.toLowerCase()) &&
-    !fridgeIngredients.some(ing => ing.name.toLowerCase() === ingredient.toLowerCase())
-  ).slice(0, 8); // Limit to 8 suggestions
+  const availableIngredients = fridgeIngredients.map((item: any) => item.name.toLowerCase());
+  const filteredIngredients = ['tomato', 'onion', 'garlic', 'olive oil', 'salt', 'pepper', 'cheese', 'bread', 'milk', 'eggs']
+    .filter(ingredient => ingredient.includes(newIngredient.toLowerCase()) && !availableIngredients.includes(ingredient));
 
   const addIngredient = async () => {
-    if (newIngredient.trim()) {
-      const ingredientToAdd = newIngredient.trim();
-      try {
-        await addIngredientMutation.mutateAsync({
-          name: ingredientToAdd,
-          quantity: 1,
-          unit: 'piece'
-        });
-        setNewIngredient('');
-        setHighlightedIngredient(ingredientToAdd);
-        // Clear highlight after 2 seconds
-        setTimeout(() => setHighlightedIngredient(null), 2000);
-      } catch (error) {
-        Alert.alert('Error', 'Failed to add ingredient. Please try again.');
-      }
+    if (!newIngredient.trim()) {
+      showError('Error', 'Please enter an ingredient name');
+      return;
+    }
+
+    try {
+      await addIngredientMutation.mutateAsync({
+        name: newIngredient.trim(),
+        quantity: 1,
+        unit: 'piece',
+        expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      });
+      setNewIngredient('');
+      showSuccess('Success', 'Ingredient added to fridge!');
+    } catch (error: any) {
+      showError('Error', 'Failed to add ingredient. Please try again.');
     }
   };
 
   const removeIngredient = async (ingredient: any) => {
     try {
       await deleteIngredientMutation.mutateAsync(ingredient.id);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to remove ingredient. Please try again.');
+      showSuccess('Success', 'Ingredient removed from fridge!');
+    } catch (error: any) {
+      showError('Error', 'Failed to remove ingredient. Please try again.');
     }
   };
 
@@ -85,14 +69,13 @@ export default function FridgeScreen() {
       await addIngredientMutation.mutateAsync({
         name: ingredientName,
         quantity: 1,
-        unit: 'piece'
+        unit: 'piece',
+        expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       });
       setNewIngredient('');
-      setHighlightedIngredient(ingredientName);
-      // Clear highlight after 2 seconds
-      setTimeout(() => setHighlightedIngredient(null), 2000);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add ingredient. Please try again.');
+      showSuccess('Success', 'Ingredient added to fridge!');
+    } catch (error: any) {
+      showError('Error', 'Failed to add ingredient. Please try again.');
     }
   };
 
@@ -272,11 +255,11 @@ export default function FridgeScreen() {
       {/* Suggested Recipes */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Suggested Recipes</Text>
-        {suggestionsLoading ? (
+        {recipesLoading ? (
           renderLoadingState()
-        ) : suggestedRecipes.length > 0 ? (
+        ) : recipes.length > 0 ? (
           <FlatList
-            data={suggestedRecipes}
+            data={recipes}
             renderItem={renderRecipeCard}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
@@ -289,6 +272,21 @@ export default function FridgeScreen() {
           </View>
         )}
       </View>
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
+      )}
     </SafeAreaView>
   );
 }
