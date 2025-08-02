@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,26 +6,78 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import FormInput from '../components/FormInput';
+import { apiService } from '../services/api';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
-  const [name, setName] = useState('Chef John');
-  const [email, setEmail] = useState('john@example.com');
-  const [bio, setBio] = useState('Passionate home chef who loves experimenting with new recipes.');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    // Here you would typically save the profile data to your backend
-    Alert.alert(
-      'Success',
-      'Profile updated successfully!',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+  // Load current profile data
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const profile = await apiService.getProfile();
+      setName(profile.name || '');
+      setEmail(profile.email || '');
+      setProfileImage(profile.avatar || null);
+      // Note: bio is not part of the backend User entity, so we'll keep it local
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      Alert.alert('Error', 'Failed to load profile data');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name is required');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const updateData: any = {
+        name: name.trim(),
+      };
+
+      // Only include email if it's different from current
+      if (email.trim() && email !== '') {
+        updateData.email = email.trim();
+      }
+
+      // Update profile
+      await apiService.updateProfile(updateData);
+
+      // Update avatar if changed
+      if (profileImage && profileImage.startsWith('file://')) {
+        // TODO: Implement image upload to server and get URL
+        // For now, we'll just update the avatar field with the local URI
+        // In a real app, you'd upload the image to a server first
+        await apiService.updateProfileAvatar(profileImage);
+      }
+
+      Alert.alert(
+        'Success',
+        'Profile updated successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      Alert.alert('Error', error.message || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -70,8 +122,10 @@ export default function EditProfileScreen() {
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Edit Profile</Text>
-          <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-            <Text style={styles.saveText}>Save</Text>
+          <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={isLoading}>
+            <Text style={[styles.saveText, isLoading && styles.saveTextDisabled]}>
+              {isLoading ? 'Saving...' : 'Save'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -186,6 +240,9 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
+  },
+  saveTextDisabled: {
+    color: colors.textSecondary,
   },
   avatarSection: {
     alignItems: 'center',

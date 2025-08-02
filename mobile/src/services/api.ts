@@ -183,6 +183,27 @@ class ApiService {
     return this.request<User>('/users/profile');
   }
 
+  async updateProfile(profileData: Partial<User>): Promise<User> {
+    return this.request<User>('/users/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async updateProfilePreferences(preferences: any): Promise<User> {
+    return this.request<User>('/users/profile/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(preferences),
+    });
+  }
+
+  async updateProfileAvatar(avatarUrl: string): Promise<User> {
+    return this.request<User>('/users/profile/avatar', {
+      method: 'PATCH',
+      body: JSON.stringify({ avatar: avatarUrl }),
+    });
+  }
+
   // Recipes
   async getRecipes(filters?: any): Promise<Recipe[]> {
     const queryParams = filters ? new URLSearchParams(filters).toString() : '';

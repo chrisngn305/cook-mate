@@ -1,8 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto, UserPreferencesDto } from './dto/update-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+
+interface RequestWithUser extends Request {
+  user: {
+    id: string;
+    email: string;
+  };
+}
 
 @Controller('users')
 export class UsersController {
@@ -21,7 +40,7 @@ export class UsersController {
 
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
-  getProfile(@Request() req) {
+  getProfile(@Request() req: RequestWithUser) {
     return this.usersService.findOne(req.user.id);
   }
 
@@ -33,8 +52,23 @@ export class UsersController {
 
   @Patch('profile')
   @UseGuards(AuthGuard('jwt'))
-  updateProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(req.user.id, updateUserDto);
+  @HttpCode(HttpStatus.OK)
+  updateProfile(@Request() req: RequestWithUser, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.updateProfile(req.user.id, updateUserDto);
+  }
+
+  @Patch('profile/preferences')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  updatePreferences(@Request() req: RequestWithUser, @Body() preferences: UserPreferencesDto) {
+    return this.usersService.updatePreferences(req.user.id, preferences);
+  }
+
+  @Patch('profile/avatar')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  updateAvatar(@Request() req: RequestWithUser, @Body() body: { avatar: string }) {
+    return this.usersService.updateAvatar(req.user.id, body.avatar);
   }
 
   @Patch(':id')
