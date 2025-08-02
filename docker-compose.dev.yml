@@ -1,0 +1,53 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: cook-mate-mysql-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: cook_mate
+      MYSQL_USER: cookmate
+      MYSQL_PASSWORD: cookmate123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - cook-mate-dev-network
+
+  # Backend API (Development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: cook-mate-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=cookmate
+      - DB_PASSWORD=cookmate123
+      - DB_NAME=cook_mate
+      - JWT_SECRET=dev-jwt-secret-key
+      - JWT_EXPIRES_IN=7d
+    depends_on:
+      - mysql
+    networks:
+      - cook-mate-dev-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    command: npm run start:dev
+
+volumes:
+  mysql_dev_data:
+
+networks:
+  cook-mate-dev-network:
+    driver: bridge 
