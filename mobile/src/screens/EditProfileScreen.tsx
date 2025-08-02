@@ -6,33 +6,31 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import FormInput from '../components/FormInput';
-import { apiService } from '../services/api';
+import { useProfile, useUpdateProfile, useUpdateProfileAvatar } from '../services/hooks';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
+  
+  // Use React Query hooks
+  const { data: profile, isLoading: isLoadingProfile } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
+  const updateAvatarMutation = useUpdateProfileAvatar();
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load current profile data
+  // Load current profile data when profile is loaded
   useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    try {
-      const profile = await apiService.getProfile();
+    if (profile) {
       setName(profile.name || '');
       setEmail(profile.email || '');
       setProfileImage(profile.avatar || null);
       // Note: bio is not part of the backend User entity, so we'll keep it local
-    } catch (error) {
-      console.error('Failed to load profile:', error);
-      Alert.alert('Error', 'Failed to load profile data');
     }
-  };
+  }, [profile]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -51,15 +49,15 @@ export default function EditProfileScreen() {
         updateData.email = email.trim();
       }
 
-      // Update profile
-      await apiService.updateProfile(updateData);
+      // Update profile using React Query mutation
+      await updateProfileMutation.mutateAsync(updateData);
 
       // Update avatar if changed
       if (profileImage && profileImage.startsWith('file://')) {
         // TODO: Implement image upload to server and get URL
         // For now, we'll just update the avatar field with the local URI
         // In a real app, you'd upload the image to a server first
-        await apiService.updateProfileAvatar(profileImage);
+        await updateAvatarMutation.mutateAsync(profileImage);
       }
 
       Alert.alert(

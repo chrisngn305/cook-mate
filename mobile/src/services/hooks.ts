@@ -270,4 +270,37 @@ export const useProfile = () => {
     queryKey: ['profile'],
     queryFn: () => apiService.getProfile(),
   });
+};
+
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (profileData: any) => apiService.updateProfile(profileData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+};
+
+export const useUpdateProfilePreferences = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (preferences: any) => apiService.updateProfilePreferences(preferences),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+};
+
+export const useUpdateProfileAvatar = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (avatarUrl: string) => apiService.updateProfileAvatar(avatarUrl),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
 }; 

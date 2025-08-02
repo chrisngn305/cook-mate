@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   View,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, spacing } from '../theme';
 import { Recipe, Ingredient, RecipeStep } from '../types/recipe';
 import {
@@ -18,10 +17,21 @@ import {
   IngredientsList,
   StepsList,
   ImageUpload,
+  CustomPopup,
 } from '../components';
+import { useCreateRecipe, useUpdateRecipe } from '../services/hooks';
+import { usePopup } from '../hooks/usePopup';
 
 export default function AddRecipeScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const isEditMode = route.params?.mode === 'edit';
+  const existingRecipe = route.params?.recipe as Recipe | undefined;
+  
+  const createRecipeMutation = useCreateRecipe();
+  const updateRecipeMutation = useUpdateRecipe();
+  const { showSuccess, showError, popupConfig, isVisible, hidePopup } = usePopup();
+  
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [cookingTime, setCookingTime] = useState('');
@@ -31,20 +41,38 @@ export default function AddRecipeScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const saveRecipe = () => {
+  // Pre-fill form with existing recipe data in edit mode
+  useEffect(() => {
+    if (isEditMode && existingRecipe) {
+      setTitle(existingRecipe.title);
+      setDescription(existingRecipe.description || '');
+      setCookingTime(existingRecipe.cookingTime.toString());
+      setServings(existingRecipe.servings?.toString() || '1');
+      setDifficulty(existingRecipe.difficulty);
+      setCuisine(existingRecipe.cuisine || '');
+      setImageUri(existingRecipe.image || null);
+      setIngredients(existingRecipe.ingredients);
+      setSteps(existingRecipe.steps);
+    }
+  }, [isEditMode, existingRecipe]);
+
+  const saveRecipe = async () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a recipe title');
+      showError('Error', 'Please enter a recipe title');
       return;
     }
     if (ingredients.length === 0) {
-      Alert.alert('Error', 'Please add at least one ingredient');
+      showError('Error', 'Please add at least one ingredient');
       return;
     }
     if (steps.length === 0) {
-      Alert.alert('Error', 'Please add at least one step');
+      showError('Error', 'Please add at least one step');
       return;
     }
+
+    setIsSaving(true);
 
     const recipe: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'> = {
       title: title.trim(),
@@ -62,11 +90,28 @@ export default function AddRecipeScreen() {
       season: [],
     };
 
-    // TODO: Save recipe to storage/database
-    console.log('Saving recipe:', recipe);
-    Alert.alert('Success', 'Recipe saved successfully!', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+    try {
+      if (isEditMode) {
+        // Update existing recipe
+        await updateRecipeMutation.mutateAsync({ id: route.params?.recipeId, recipeData: recipe });
+        showSuccess('Success', 'Recipe updated successfully!', () => {
+          navigation.goBack();
+        });
+      } else {
+        // Create new recipe
+        const newRecipe = await createRecipeMutation.mutateAsync(recipe);
+        showSuccess('Success', 'Recipe saved successfully!', () => {
+          navigation.navigate('RecipeDetail', { 
+            recipeId: newRecipe.id 
+          });
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to save recipe:', error);
+      showError('Error', error.message || 'Failed to save recipe');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -76,10 +121,11 @@ export default function AddRecipeScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScreenHeader
-          title="Add Recipe"
+          title={isEditMode ? "Edit Recipe" : "Add Recipe"}
           onBack={() => navigation.goBack()}
           onSave={saveRecipe}
           showSave={true}
+          saveDisabled={isSaving}
         />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -156,6 +202,21 @@ export default function AddRecipeScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Custom Popup */}
+      {popupConfig && (
+        <CustomPopup
+          visible={isVisible}
+          title={popupConfig.title}
+          message={popupConfig.message}
+          type={popupConfig.type}
+          confirmText={popupConfig.confirmText}
+          cancelText={popupConfig.cancelText}
+          showCancel={popupConfig.showCancel}
+          onConfirm={popupConfig.onConfirm}
+          onCancel={popupConfig.onCancel}
+        />
+      )}
     </SafeAreaView>
   );
 }

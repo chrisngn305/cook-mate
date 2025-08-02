@@ -8,9 +8,10 @@ interface ScreenHeaderProps {
   onBack?: () => void;
   onSave?: () => void;
   showSave?: boolean;
+  saveDisabled?: boolean;
 }
 
-export default function ScreenHeader({ title, onBack, onSave, showSave = false }: ScreenHeaderProps) {
+export default function ScreenHeader({ title, onBack, onSave, showSave = false, saveDisabled = false }: ScreenHeaderProps) {
   return (
     <View style={styles.header}>
       <TouchableOpacity style={styles.backButton} onPress={onBack}>
@@ -18,8 +19,16 @@ export default function ScreenHeader({ title, onBack, onSave, showSave = false }
       </TouchableOpacity>
       <Text style={styles.title}>{title}</Text>
       {showSave && (
-        <TouchableOpacity style={styles.saveButton} onPress={onSave}>
-          <Ionicons name="checkmark" size={24} color={colors.primary} />
+        <TouchableOpacity 
+          style={[styles.saveButton, saveDisabled && styles.saveButtonDisabled]} 
+          onPress={onSave}
+          disabled={saveDisabled}
+        >
+          <Ionicons 
+            name="checkmark" 
+            size={24} 
+            color={saveDisabled ? colors.textSecondary : colors.primary} 
+          />
         </TouchableOpacity>
       )}
     </View>
@@ -45,5 +54,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     padding: spacing.sm,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
 }); 
