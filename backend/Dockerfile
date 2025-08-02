@@ -30,6 +30,10 @@ RUN npm ci --only=production
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
+# Move files from dist/src to dist for proper structure
+RUN mv dist/src/* dist/ && rmdir dist/src
+# Copy migration runner
+COPY --from=builder /app/migration-runner.js ./migration-runner.js
 
 # Create uploads directory
 RUN mkdir -p uploads

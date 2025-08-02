@@ -81,7 +81,7 @@ export class Recipe {
 
   @ManyToMany(() => RecipeTag)
   @JoinTable({
-    name: 'recipe_tags',
+    name: 'recipe_recipe_tags',
     joinColumn: { name: 'recipeId', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'tagId', referencedColumnName: 'id' },
   })
