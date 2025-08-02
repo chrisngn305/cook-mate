@@ -1,18 +1,24 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { useProfile } from '../services/hooks';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
+  const { logout } = useAuth();
   
+  // Fetch user profile from API
+  const { data: user, isLoading, error } = useProfile();
+
   const profileStats = [
-    { label: 'Recipes', value: '24', icon: 'book' },
-    { label: 'Favorites', value: '12', icon: 'heart' },
-    { label: 'Shopping Lists', value: '8', icon: 'list' },
-    { label: 'Days Streak', value: '15', icon: 'flame' },
+    { label: 'Recipes', value: user?.recipesCount?.toString() || '0', icon: 'book' },
+    { label: 'Favorites', value: user?.favoritesCount?.toString() || '0', icon: 'heart' },
+    { label: 'Shopping Lists', value: user?.shoppingListsCount?.toString() || '0', icon: 'list' },
+    { label: 'Days Streak', value: user?.daysStreak?.toString() || '0', icon: 'flame' },
   ];
 
   const menuItems = [
@@ -23,6 +29,58 @@ export default function ProfileScreen() {
     { title: 'Help & Support', icon: 'help-circle-outline', action: () => {} },
     { title: 'About', icon: 'information-circle-outline', action: () => {} },
   ];
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Loading profile...</Text>
+    </View>
+  );
+
+  const renderErrorState = () => (
+    <View style={styles.errorContainer}>
+      <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+      <Text style={styles.errorText}>Failed to load profile</Text>
+      <Text style={styles.errorSubtext}>Please check your connection and try again</Text>
+    </View>
+  );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderLoadingState()}
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderErrorState()}
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,10 +99,14 @@ export default function ProfileScreen() {
         {/* Profile Info */}
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={40} color={colors.primary} />
+            {user?.avatar ? (
+              <Ionicons name="image" size={40} color={colors.primary} />
+            ) : (
+              <Ionicons name="person" size={40} color={colors.primary} />
+            )}
           </View>
-          <Text style={styles.name}>Chef John</Text>
-          <Text style={styles.email}>john@example.com</Text>
+          <Text style={styles.name}>{user?.name || 'User'}</Text>
+          <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
         </View>
 
         {/* Stats */}
@@ -60,6 +122,47 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+
+        {/* Preferences */}
+        {user?.preferences && (
+          <View style={styles.preferencesSection}>
+            <Text style={styles.sectionTitle}>Preferences</Text>
+            <View style={styles.preferencesContainer}>
+              {user.preferences.cuisine && user.preferences.cuisine.length > 0 && (
+                <View style={styles.preferenceItem}>
+                  <Text style={styles.preferenceLabel}>Favorite Cuisines:</Text>
+                  <View style={styles.preferenceTags}>
+                    {user.preferences.cuisine.map((cuisine, index) => (
+                      <View key={index} style={styles.preferenceTag}>
+                        <Text style={styles.preferenceTagText}>{cuisine}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              
+              {user.preferences.dietaryRestrictions && user.preferences.dietaryRestrictions.length > 0 && (
+                <View style={styles.preferenceItem}>
+                  <Text style={styles.preferenceLabel}>Dietary Restrictions:</Text>
+                  <View style={styles.preferenceTags}>
+                    {user.preferences.dietaryRestrictions.map((restriction, index) => (
+                      <View key={index} style={styles.preferenceTag}>
+                        <Text style={styles.preferenceTagText}>{restriction}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              
+              {user.preferences.cookingSkill && (
+                <View style={styles.preferenceItem}>
+                  <Text style={styles.preferenceLabel}>Cooking Skill:</Text>
+                  <Text style={styles.preferenceValue}>{user.preferences.cookingSkill}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
@@ -77,7 +180,7 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutButton}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={20} color={colors.error} />
             <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
@@ -166,6 +269,50 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
   },
+  preferencesSection: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xxl,
+  },
+  preferencesContainer: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  preferenceItem: {
+    marginBottom: spacing.md,
+  },
+  preferenceLabel: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+    fontWeight: '600',
+  },
+  preferenceValue: {
+    ...typography.body,
+    color: colors.text,
+    textTransform: 'capitalize',
+  },
+  preferenceTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  preferenceTag: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  preferenceTagText: {
+    ...typography.caption,
+    color: colors.text,
+    textTransform: 'capitalize',
+  },
   menuSection: {
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.xxl,
@@ -212,5 +359,32 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.error,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  errorText: {
+    ...typography.h3,
+    color: colors.error,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  errorSubtext: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 }); 

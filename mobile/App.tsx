@@ -6,15 +6,18 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import queryClient from './src/services/queryClient';
+import { AuthProvider } from './src/contexts/AuthContext';
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <PaperProvider>
-          <AppNavigator />
-          <StatusBar style="auto" />
-        </PaperProvider>
+        <AuthProvider>
+          <PaperProvider>
+            <AppNavigator />
+            <StatusBar style="auto" />
+          </PaperProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

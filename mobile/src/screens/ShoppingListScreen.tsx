@@ -8,67 +8,124 @@ import {
   TextInput,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-
-interface ShoppingItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  isCompleted: boolean;
-  recipeId?: string;
-}
+import { 
+  useShoppingLists, 
+  useCreateShoppingList, 
+  useAddShoppingListItem,
+  useToggleShoppingListItem,
+  useDeleteShoppingListItem,
+  useDeleteShoppingList
+} from '../services/hooks';
 
 export default function ShoppingListScreen() {
-  const [items, setItems] = useState<ShoppingItem[]>([
-    { id: '1', name: 'Tomatoes', quantity: 4, unit: 'pieces', isCompleted: false },
-    { id: '2', name: 'Onions', quantity: 2, unit: 'pieces', isCompleted: true },
-    { id: '3', name: 'Chicken breast', quantity: 500, unit: 'g', isCompleted: false },
-    { id: '4', name: 'Pasta', quantity: 250, unit: 'g', isCompleted: false },
-  ]);
+  const navigation = useNavigation<any>();
   const [newItem, setNewItem] = useState({ name: '', quantity: '', unit: '' });
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
-  const addItem = () => {
+  // Fetch shopping lists from API
+  const { data: shoppingLists = [], isLoading } = useShoppingLists();
+  const createListMutation = useCreateShoppingList();
+  const addItemMutation = useAddShoppingListItem();
+  const toggleItemMutation = useToggleShoppingListItem();
+  const deleteItemMutation = useDeleteShoppingListItem();
+  const deleteListMutation = useDeleteShoppingList();
+
+  // Get the first list or create a default one
+  const currentList = shoppingLists.length > 0 ? shoppingLists[0] : null;
+  const items = currentList?.items || [];
+
+  const addItem = async () => {
+    if (!currentList) {
+      // Create a new list if none exists
+      try {
+        const newList = await createListMutation.mutateAsync({
+          name: 'My Shopping List',
+          isCompleted: false
+        });
+        setSelectedListId(newList.id);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to create shopping list. Please try again.');
+        return;
+      }
+    }
+
     if (newItem.name.trim() && newItem.quantity.trim()) {
-      const item: ShoppingItem = {
-        id: Date.now().toString(),
-        name: newItem.name.trim(),
-        quantity: parseFloat(newItem.quantity),
-        unit: newItem.unit || 'pieces',
-        isCompleted: false,
-      };
-      setItems([...items, item]);
-      setNewItem({ name: '', quantity: '', unit: '' });
+      try {
+        await addItemMutation.mutateAsync({
+          listId: currentList?.id || selectedListId!,
+          item: {
+            name: newItem.name.trim(),
+            quantity: parseFloat(newItem.quantity),
+            unit: newItem.unit || 'pieces',
+            isCompleted: false,
+          }
+        });
+        setNewItem({ name: '', quantity: '', unit: '' });
+      } catch (error) {
+        Alert.alert('Error', 'Failed to add item. Please try again.');
+      }
     }
   };
 
-  const toggleItem = (id: string) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, isCompleted: !item.isCompleted } : item
-    ));
+  const toggleItem = async (itemId: string) => {
+    if (!currentList) return;
+    
+    try {
+      await toggleItemMutation.mutateAsync({
+        listId: currentList.id,
+        itemId: itemId
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update item. Please try again.');
+    }
   };
 
-  const removeItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const removeItem = async (itemId: string) => {
+    if (!currentList) return;
+    
+    try {
+      await deleteItemMutation.mutateAsync({
+        listId: currentList.id,
+        itemId: itemId
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove item. Please try again.');
+    }
+  };
+
+  const deleteList = async (listId: string) => {
+    try {
+      await deleteListMutation.mutateAsync(listId);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete shopping list. Please try again.');
+    }
   };
 
   const completedItems = items.filter(item => item.isCompleted);
   const pendingItems = items.filter(item => !item.isCompleted);
 
-  const renderItem = ({ item }: { item: ShoppingItem }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View style={[styles.itemCard, item.isCompleted && styles.itemCompleted]}>
       <TouchableOpacity 
         style={styles.checkbox} 
         onPress={() => toggleItem(item.id)}
+        disabled={toggleItemMutation.isPending}
       >
-        <Ionicons 
-          name={item.isCompleted ? 'checkmark-circle' : 'ellipse-outline'} 
-          size={24} 
-          color={item.isCompleted ? colors.success : colors.textSecondary} 
-        />
+        {toggleItemMutation.isPending ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <Ionicons 
+            name={item.isCompleted ? 'checkmark-circle' : 'ellipse-outline'} 
+            size={24} 
+            color={item.isCompleted ? colors.success : colors.textSecondary} 
+          />
+        )}
       </TouchableOpacity>
       
       <View style={styles.itemInfo}>
@@ -80,9 +137,29 @@ export default function ShoppingListScreen() {
         </Text>
       </View>
       
-      <TouchableOpacity onPress={() => removeItem(item.id)}>
+      <TouchableOpacity 
+        onPress={() => removeItem(item.id)}
+        disabled={deleteItemMutation.isPending}
+      >
         <Ionicons name="trash-outline" size={20} color={colors.error} />
       </TouchableOpacity>
+    </View>
+  );
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Loading shopping lists...</Text>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="list-outline" size={64} color={colors.textSecondary} />
+      <Text style={styles.emptyTitle}>Your shopping list is empty</Text>
+      <Text style={styles.emptySubtitle}>
+        Add items manually or generate from recipes
+      </Text>
     </View>
   );
 
@@ -102,79 +179,87 @@ export default function ShoppingListScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Add Item */}
-      <View style={styles.addContainer}>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={[styles.input, styles.nameInput]}
-            placeholder="Item name"
-            placeholderTextColor={colors.inputPlaceholder}
-            value={newItem.name}
-            onChangeText={(text) => setNewItem({ ...newItem, name: text })}
-          />
-          <TextInput
-            style={[styles.input, styles.quantityInput]}
-            placeholder="Qty"
-            placeholderTextColor={colors.inputPlaceholder}
-            value={newItem.quantity}
-            onChangeText={(text) => setNewItem({ ...newItem, quantity: text })}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={[styles.input, styles.unitInput]}
-            placeholder="Unit"
-            placeholderTextColor={colors.inputPlaceholder}
-            value={newItem.unit}
-            onChangeText={(text) => setNewItem({ ...newItem, unit: text })}
-          />
-          <TouchableOpacity style={styles.addButton} onPress={addItem}>
-            <Ionicons name="add" size={20} color={colors.surface} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {isLoading ? (
+        renderLoadingState()
+      ) : (
+        <>
+          {/* Add Item */}
+          <View style={styles.addContainer}>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, styles.nameInput]}
+                placeholder="Item name"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={newItem.name}
+                onChangeText={(text) => setNewItem({ ...newItem, name: text })}
+              />
+              <TextInput
+                style={[styles.input, styles.quantityInput]}
+                placeholder="Qty"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={newItem.quantity}
+                onChangeText={(text) => setNewItem({ ...newItem, quantity: text })}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={[styles.input, styles.unitInput]}
+                placeholder="Unit"
+                placeholderTextColor={colors.inputPlaceholder}
+                value={newItem.unit}
+                onChangeText={(text) => setNewItem({ ...newItem, unit: text })}
+              />
+              <TouchableOpacity 
+                style={styles.addButton} 
+                onPress={addItem}
+                disabled={addItemMutation.isPending}
+              >
+                {addItemMutation.isPending ? (
+                  <ActivityIndicator size="small" color={colors.surface} />
+                ) : (
+                  <Ionicons name="add" size={20} color={colors.surface} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      {/* Summary */}
-      <View style={styles.summary}>
-        <Text style={styles.summaryText}>
-          {pendingItems.length} items remaining, {completedItems.length} completed
-        </Text>
-      </View>
+          {/* Summary */}
+          {items.length > 0 && (
+            <View style={styles.summary}>
+              <Text style={styles.summaryText}>
+                {pendingItems.length} items remaining, {completedItems.length} completed
+              </Text>
+            </View>
+          )}
 
-      {/* Pending Items */}
-      {pendingItems.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>To Buy</Text>
-          <FlatList
-            data={pendingItems}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
-      )}
+          {/* Pending Items */}
+          {pendingItems.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>To Buy</Text>
+              <FlatList
+                data={pendingItems}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
 
-      {/* Completed Items */}
-      {completedItems.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Completed</Text>
-          <FlatList
-            data={completedItems}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
-      )}
+          {/* Completed Items */}
+          {completedItems.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Completed</Text>
+              <FlatList
+                data={completedItems}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
 
-      {/* Empty State */}
-      {items.length === 0 && (
-        <View style={styles.emptyState}>
-          <Ionicons name="list-outline" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>Your shopping list is empty</Text>
-          <Text style={styles.emptySubtitle}>
-            Add items manually or generate from recipes
-          </Text>
-        </View>
+          {/* Empty State */}
+          {items.length === 0 && !isLoading && renderEmptyState()}
+        </>
       )}
     </SafeAreaView>
   );
@@ -292,6 +377,16 @@ const styles = StyleSheet.create({
   itemQuantity: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
   },
   emptyState: {
     flex: 1,

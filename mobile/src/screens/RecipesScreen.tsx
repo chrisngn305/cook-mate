@@ -7,15 +7,20 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { useRecipes } from '../services/hooks';
 
 export default function RecipesScreen() {
   const navigation = useNavigation<any>();
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+
+  // Fetch recipes from API
+  const { data: recipes = [], isLoading } = useRecipes();
 
   const filters = [
     { id: 'all', label: 'All' },
@@ -23,54 +28,6 @@ export default function RecipesScreen() {
     { id: 'medium', label: 'Medium' },
     { id: 'hard', label: 'Hard' },
     { id: 'quick', label: 'Quick' },
-  ];
-
-  const recipes = [
-    {
-      id: '1',
-      title: 'Pasta Carbonara',
-      description: 'Classic Italian pasta with eggs and cheese',
-      cookingTime: 25,
-      difficulty: 'easy',
-      cuisine: 'Italian',
-      image: null,
-    },
-    {
-      id: '2',
-      title: 'Chicken Stir Fry',
-      description: 'Quick and healthy Asian stir fry',
-      cookingTime: 20,
-      difficulty: 'medium',
-      cuisine: 'Asian',
-      image: null,
-    },
-    {
-      id: '3',
-      title: 'Beef Tacos',
-      description: 'Mexican street food favorite',
-      cookingTime: 30,
-      difficulty: 'easy',
-      cuisine: 'Mexican',
-      image: null,
-    },
-    {
-      id: '4',
-      title: 'Beef Stew',
-      description: 'Slow-cooked hearty stew',
-      cookingTime: 120,
-      difficulty: 'hard',
-      cuisine: 'American',
-      image: null,
-    },
-    {
-      id: '5',
-      title: 'Quick Salad',
-      description: 'Fresh and healthy salad',
-      cookingTime: 10,
-      difficulty: 'easy',
-      cuisine: 'Mediterranean',
-      image: null,
-    },
   ];
 
   // Filter recipes based on selected filter
@@ -125,6 +82,26 @@ export default function RecipesScreen() {
     </TouchableOpacity>
   );
 
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Loading recipes...</Text>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="restaurant-outline" size={48} color={colors.textSecondary} />
+      <Text style={styles.emptyText}>No recipes found</Text>
+      <Text style={styles.emptySubtext}>
+        {selectedFilter && selectedFilter !== 'all' 
+          ? `No ${selectedFilter} recipes available`
+          : 'Try adding some recipes to get started'
+        }
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -164,13 +141,21 @@ export default function RecipesScreen() {
       </View>
 
       {/* Recipe List */}
-      <FlatList
-        data={filteredRecipes}
-        renderItem={renderRecipeCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.recipeList}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        renderLoadingState()
+      ) : filteredRecipes.length > 0 ? (
+        <FlatList
+          data={filteredRecipes}
+          renderItem={renderRecipeCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.recipeList}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View style={styles.emptyContainer}>
+          {renderEmptyState()}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -273,5 +258,32 @@ const styles = StyleSheet.create({
   metaText: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  emptyText: {
+    ...typography.h3,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  emptySubtext: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 }); 

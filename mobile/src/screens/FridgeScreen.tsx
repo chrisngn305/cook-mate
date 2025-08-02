@@ -7,22 +7,33 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { 
+  useFridgeIngredients, 
+  useAddFridgeIngredient, 
+  useDeleteFridgeIngredient,
+  useSearchRecipesByIngredients 
+} from '../services/hooks';
 
 export default function FridgeScreen() {
-  const [ingredients, setIngredients] = useState<string[]>([
-    'tomatoes', 
-    'onions', 
-    'chicken', 
-    'garlic', 
-    'olive oil',
-    'bread'
-  ]);
+  const navigation = useNavigation<any>();
   const [newIngredient, setNewIngredient] = useState('');
   const [highlightedIngredient, setHighlightedIngredient] = useState<string | null>(null);
+
+  // Fetch data from API
+  const { data: fridgeIngredients = [], isLoading: fridgeLoading } = useFridgeIngredients();
+  const addIngredientMutation = useAddFridgeIngredient();
+  const deleteIngredientMutation = useDeleteFridgeIngredient();
+
+  // Get ingredient names for recipe search
+  const ingredientNames = fridgeIngredients.map(ing => ing.name);
+  const { data: suggestedRecipes = [], isLoading: suggestionsLoading } = useSearchRecipesByIngredients(ingredientNames);
 
   const allIngredients = [
     'eggs', 'milk', 'cheese', 'butter', 'rice', 'pasta', 
@@ -36,164 +47,149 @@ export default function FridgeScreen() {
     'soy sauce', 'vinegar', 'honey', 'sugar', 'flour', 'cornstarch'
   ];
 
-  const allRecipes = [
-    {
-      id: '1',
-      title: 'Chicken Stir Fry',
-      ingredients: ['chicken', 'soy sauce', 'ginger', 'onions', 'garlic'],
-      cookingTime: 20,
-      difficulty: 'medium',
-    },
-    {
-      id: '2',
-      title: 'Tomato Pasta',
-      ingredients: ['tomatoes', 'pasta', 'garlic', 'onions', 'olive oil'],
-      cookingTime: 15,
-      difficulty: 'easy',
-    },
-    {
-      id: '3',
-      title: 'Onion Soup',
-      ingredients: ['onions', 'beef broth', 'bread', 'garlic', 'butter'],
-      cookingTime: 45,
-      difficulty: 'medium',
-    },
-    {
-      id: '4',
-      title: 'Tomato Salad',
-      ingredients: ['tomatoes', 'onions', 'olive oil', 'basil'],
-      cookingTime: 10,
-      difficulty: 'easy',
-    },
-    {
-      id: '5',
-      title: 'Chicken Soup',
-      ingredients: ['chicken', 'onions', 'carrots', 'celery', 'broth'],
-      cookingTime: 60,
-      difficulty: 'medium',
-    },
-    {
-      id: '6',
-      title: 'Garlic Bread',
-      ingredients: ['bread', 'garlic', 'butter', 'parmesan'],
-      cookingTime: 15,
-      difficulty: 'easy',
-    },
-  ];
-
-  // Calculate recipe matches based on available ingredients
-  const calculateRecipeMatches = () => {
-    return allRecipes.map(recipe => {
-      const availableIngredients = ingredients.map(ing => ing.toLowerCase());
-      const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
-      
-      const matchingIngredients = recipeIngredients.filter(ingredient =>
-        availableIngredients.some(available => 
-          available.includes(ingredient) || ingredient.includes(available)
-        )
-      );
-      
-      const missingIngredients = recipeIngredients.filter(ingredient =>
-        !availableIngredients.some(available => 
-          available.includes(ingredient) || ingredient.includes(available)
-        )
-      );
-      
-      const matchPercentage = Math.round((matchingIngredients.length / recipeIngredients.length) * 100);
-      
-      return {
-        ...recipe,
-        matchPercentage,
-        missingIngredients,
-        matchingIngredients,
-      };
-    }).filter(recipe => recipe.matchPercentage > 0).sort((a, b) => b.matchPercentage - a.matchPercentage);
-  };
-
-  const suggestedRecipes = calculateRecipeMatches();
-
   // Filter ingredients based on search query
   const filteredIngredients = allIngredients.filter(ingredient =>
     ingredient.toLowerCase().includes(newIngredient.toLowerCase()) &&
-    !ingredients.includes(ingredient)
+    !fridgeIngredients.some(ing => ing.name.toLowerCase() === ingredient.toLowerCase())
   ).slice(0, 8); // Limit to 8 suggestions
 
-  const addIngredient = () => {
+  const addIngredient = async () => {
     if (newIngredient.trim()) {
       const ingredientToAdd = newIngredient.trim();
-      setIngredients([ingredientToAdd, ...ingredients]);
-      setNewIngredient('');
-      setHighlightedIngredient(ingredientToAdd);
-      // Clear highlight after 2 seconds
-      setTimeout(() => setHighlightedIngredient(null), 2000);
+      try {
+        await addIngredientMutation.mutateAsync({
+          name: ingredientToAdd,
+          quantity: 1,
+          unit: 'piece'
+        });
+        setNewIngredient('');
+        setHighlightedIngredient(ingredientToAdd);
+        // Clear highlight after 2 seconds
+        setTimeout(() => setHighlightedIngredient(null), 2000);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to add ingredient. Please try again.');
+      }
     }
   };
 
-  const removeIngredient = (index: number) => {
-    setIngredients(ingredients.filter((_, i) => i !== index));
+  const removeIngredient = async (ingredient: any) => {
+    try {
+      await deleteIngredientMutation.mutateAsync(ingredient.id);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove ingredient. Please try again.');
+    }
   };
 
-  const renderIngredientChip = ({ item, index }: { item: string; index: number }) => {
-    const isHighlighted = highlightedIngredient === item;
+  const addIngredientFromSuggestion = async (ingredientName: string) => {
+    try {
+      await addIngredientMutation.mutateAsync({
+        name: ingredientName,
+        quantity: 1,
+        unit: 'piece'
+      });
+      setNewIngredient('');
+      setHighlightedIngredient(ingredientName);
+      // Clear highlight after 2 seconds
+      setTimeout(() => setHighlightedIngredient(null), 2000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add ingredient. Please try again.');
+    }
+  };
+
+  const renderIngredientChip = ({ item, index }: { item: any; index: number }) => {
+    const isHighlighted = highlightedIngredient === item.name;
     return (
       <View style={[
         styles.ingredientChip,
         isHighlighted && styles.ingredientChipHighlighted
       ]}>
-        <Text style={styles.ingredientText}>{item}</Text>
-        <TouchableOpacity onPress={() => removeIngredient(index)}>
+        <Text style={styles.ingredientText}>{item.name}</Text>
+        <TouchableOpacity onPress={() => removeIngredient(item)}>
           <Ionicons name="close" size={16} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
     );
   };
 
-  const renderRecipeCard = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.recipeCard}>
-      <View style={styles.recipeHeader}>
-        <Text style={styles.recipeTitle}>{item.title}</Text>
-        <View style={styles.matchBadge}>
-          <Text style={styles.matchText}>{item.matchPercentage}% match</Text>
-        </View>
-      </View>
-      
-      <View style={styles.recipeMeta}>
-        <View style={styles.metaItem}>
-          <Ionicons name="time" size={14} color={colors.textSecondary} />
-          <Text style={styles.metaText}>{item.cookingTime} min</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Ionicons name="star" size={14} color={colors.textSecondary} />
-          <Text style={styles.metaText}>{item.difficulty}</Text>
-        </View>
-      </View>
+  const renderRecipeCard = ({ item }: { item: any }) => {
+    // Calculate recipe matches based on available ingredients
+    const availableIngredients = fridgeIngredients.map(ing => ing.name.toLowerCase());
+    const recipeIngredients = item.ingredients.map((ing: any) => ing.name.toLowerCase());
+    
+    const matchingIngredients = recipeIngredients.filter(ingredient =>
+      availableIngredients.some(available => 
+        available.includes(ingredient) || ingredient.includes(available)
+      )
+    );
+    
+    const missingIngredients = recipeIngredients.filter(ingredient =>
+      !availableIngredients.some(available => 
+        available.includes(ingredient) || ingredient.includes(available)
+      )
+    );
+    
+    const matchPercentage = Math.round((matchingIngredients.length / recipeIngredients.length) * 100);
 
-      {item.matchingIngredients.length > 0 && (
-        <View style={styles.matchingContainer}>
-          <Text style={styles.matchingTitle}>You have: {item.matchingIngredients.length}/{item.ingredients.length} ingredients</Text>
-          <View style={styles.matchingIngredients}>
-            {item.matchingIngredients.map((ingredient: string, index: number) => (
-              <View key={index} style={styles.matchingChip}>
-                <Text style={styles.matchingText}>{ingredient}</Text>
-              </View>
-            ))}
+    return (
+      <TouchableOpacity 
+        style={styles.recipeCard}
+        onPress={() => navigation.navigate('RecipeDetail', { 
+          recipeId: item.id,
+          recipeTitle: item.title 
+        })}
+      >
+        <View style={styles.recipeHeader}>
+          <Text style={styles.recipeTitle}>{item.title}</Text>
+          <View style={styles.matchBadge}>
+            <Text style={styles.matchText}>{matchPercentage}% match</Text>
           </View>
         </View>
-      )}
-
-      {item.missingIngredients.length > 0 && (
-        <View style={styles.missingContainer}>
-          <Text style={styles.missingTitle}>Missing ingredients:</Text>
-          <View style={styles.missingIngredients}>
-            {item.missingIngredients.map((ingredient: string, index: number) => (
-              <View key={index} style={styles.missingChip}>
-                <Text style={styles.missingText}>{ingredient}</Text>
-              </View>
-            ))}
+        
+        <View style={styles.recipeMeta}>
+          <View style={styles.metaItem}>
+            <Ionicons name="time" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaText}>{item.cookingTime} min</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="star" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaText}>{item.difficulty}</Text>
           </View>
         </View>
-      )}
-    </TouchableOpacity>
+
+        {matchingIngredients.length > 0 && (
+          <View style={styles.matchingContainer}>
+            <Text style={styles.matchingTitle}>You have: {matchingIngredients.length}/{recipeIngredients.length} ingredients</Text>
+            <View style={styles.matchingIngredients}>
+              {matchingIngredients.map((ingredient: string, index: number) => (
+                <View key={index} style={styles.matchingChip}>
+                  <Text style={styles.matchingText}>{ingredient}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {missingIngredients.length > 0 && (
+          <View style={styles.missingContainer}>
+            <Text style={styles.missingTitle}>Missing ingredients:</Text>
+            <View style={styles.missingIngredients}>
+              {missingIngredients.map((ingredient: string, index: number) => (
+                <View key={index} style={styles.missingChip}>
+                  <Text style={styles.missingText}>{ingredient}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Loading...</Text>
+    </View>
   );
 
   return (
@@ -217,8 +213,16 @@ export default function FridgeScreen() {
             onChangeText={setNewIngredient}
             onSubmitEditing={addIngredient}
           />
-          <TouchableOpacity style={styles.addButton} onPress={addIngredient}>
-            <Ionicons name="add" size={20} color={colors.surface} />
+          <TouchableOpacity 
+            style={styles.addButton} 
+            onPress={addIngredient}
+            disabled={addIngredientMutation.isPending}
+          >
+            {addIngredientMutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.surface} />
+            ) : (
+              <Ionicons name="add" size={20} color={colors.surface} />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -226,14 +230,20 @@ export default function FridgeScreen() {
       {/* Current Ingredients */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Ingredients</Text>
-        <FlatList
-          data={ingredients}
-          renderItem={renderIngredientChip}
-          keyExtractor={(item, index) => index.toString()}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.ingredientsContainer}
-        />
+        {fridgeLoading ? (
+          renderLoadingState()
+        ) : fridgeIngredients.length > 0 ? (
+          <FlatList
+            data={fridgeIngredients}
+            renderItem={renderIngredientChip}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.ingredientsContainer}
+          />
+        ) : (
+          <Text style={styles.emptyText}>No ingredients added yet</Text>
+        )}
       </View>
 
       {/* Search Suggestions */}
@@ -245,13 +255,7 @@ export default function FridgeScreen() {
             renderItem={({ item }) => (
               <TouchableOpacity 
                 style={styles.suggestionChip}
-                onPress={() => {
-                  setIngredients([item, ...ingredients]);
-                  setNewIngredient('');
-                  setHighlightedIngredient(item);
-                  // Clear highlight after 2 seconds
-                  setTimeout(() => setHighlightedIngredient(null), 2000);
-                }}
+                onPress={() => addIngredientFromSuggestion(item)}
               >
                 <Text style={styles.suggestionChipText}>{item}</Text>
                 <Ionicons name="add" size={16} color={colors.primary} />
@@ -268,7 +272,9 @@ export default function FridgeScreen() {
       {/* Suggested Recipes */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Suggested Recipes</Text>
-        {suggestedRecipes.length > 0 ? (
+        {suggestionsLoading ? (
+          renderLoadingState()
+        ) : suggestedRecipes.length > 0 ? (
           <FlatList
             data={suggestedRecipes}
             renderItem={renderRecipeCard}
@@ -492,6 +498,15 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.error,
   },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+  },
   noRecipesContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xxl,
@@ -506,5 +521,11 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  emptyText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 }); 

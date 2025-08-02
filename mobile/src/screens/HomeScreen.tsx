@@ -6,16 +6,26 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { useRecipes, useFridgeIngredients, useSearchRecipesByIngredients } from '../services/hooks';
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  // Fetch data from API
+  const { data: recipes = [], isLoading: recipesLoading } = useRecipes();
+  const { data: fridgeIngredients = [], isLoading: fridgeLoading } = useFridgeIngredients();
+  
+  // Get ingredient names for recipe search
+  const ingredientNames = fridgeIngredients.map(ing => ing.name);
+  const { data: suggestedRecipes = [], isLoading: suggestionsLoading } = useSearchRecipesByIngredients(ingredientNames);
 
   const quickFilters = [
     { id: 'easy', label: 'Easy to Cook', icon: 'checkmark-circle' },
@@ -24,19 +34,24 @@ export default function HomeScreen() {
     { id: 'party', label: 'Party', icon: 'people' },
   ];
 
-  const allRecipes = [
-    { id: '1', title: 'Pasta Carbonara', time: 25, difficulty: 'easy', tags: ['easy', 'short'] },
-    { id: '2', title: 'Chicken Stir Fry', time: 20, difficulty: 'medium', tags: ['short'] },
-    { id: '3', title: 'Quick Salad', time: 10, difficulty: 'easy', tags: ['easy', 'short'] },
-    { id: '4', title: 'Beef Stew', time: 120, difficulty: 'hard', tags: ['cold'] },
-    { id: '5', title: 'Pizza Margherita', time: 45, difficulty: 'medium', tags: ['party'] },
-    { id: '6', title: 'Chocolate Cake', time: 90, difficulty: 'hard', tags: ['party'] },
-  ];
-
   // Filter recipes based on selected filters
-  const filteredRecipes = allRecipes.filter(recipe => {
+  const filteredRecipes = recipes.filter(recipe => {
     if (selectedFilters.length === 0) return true;
-    return selectedFilters.some(filter => recipe.tags.includes(filter));
+    
+    return selectedFilters.some(filter => {
+      switch (filter) {
+        case 'easy':
+          return recipe.difficulty === 'easy';
+        case 'short':
+          return recipe.cookingTime <= 30;
+        case 'cold':
+          return recipe.tags?.some(tag => tag.name.toLowerCase().includes('cold'));
+        case 'party':
+          return recipe.tags?.some(tag => tag.name.toLowerCase().includes('party'));
+        default:
+          return false;
+      }
+    });
   });
 
   // Handle filter selection
@@ -49,6 +64,46 @@ export default function HomeScreen() {
       }
     });
   };
+
+  const renderRecipeCard = (recipe: any) => (
+    <TouchableOpacity 
+      key={recipe.id} 
+      style={styles.recipeCard}
+      onPress={() => navigation.navigate('RecipeDetail', { 
+        recipeId: recipe.id,
+        recipeTitle: recipe.title 
+      })}
+    >
+      <View style={styles.recipeImage}>
+        {recipe.image ? (
+          <Ionicons name="image" size={32} color={colors.primary} />
+        ) : (
+          <Ionicons name="restaurant" size={32} color={colors.primary} />
+        )}
+      </View>
+      <View style={styles.recipeInfo}>
+        <Text style={styles.recipeTitle}>{recipe.title}</Text>
+        <View style={styles.recipeMeta}>
+          <View style={styles.metaItem}>
+            <Ionicons name="time" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaText}>{recipe.cookingTime} min</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="star" size={14} color={colors.textSecondary} />
+            <Text style={styles.metaText}>{recipe.difficulty}</Text>
+          </View>
+        </View>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+    </TouchableOpacity>
+  );
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Loading recipes...</Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -128,34 +183,33 @@ export default function HomeScreen() {
           <Text style={styles.sectionSubtitle}>
             Recipes based on your ingredients
           </Text>
-          {filteredRecipes.map((recipe) => (
-            <TouchableOpacity 
-              key={recipe.id} 
-              style={styles.recipeCard}
-              onPress={() => navigation.navigate('RecipeDetail', { 
-                recipeId: recipe.id,
-                recipeTitle: recipe.title 
-              })}
-            >
-              <View style={styles.recipeImage}>
-                <Ionicons name="restaurant" size={32} color={colors.primary} />
-              </View>
-              <View style={styles.recipeInfo}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                <View style={styles.recipeMeta}>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="time" size={14} color={colors.textSecondary} />
-                    <Text style={styles.metaText}>{recipe.time} min</Text>
-                  </View>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="star" size={14} color={colors.textSecondary} />
-                    <Text style={styles.metaText}>{recipe.difficulty}</Text>
-                  </View>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          ))}
+          {suggestionsLoading ? (
+            renderLoadingState()
+          ) : suggestedRecipes.length > 0 ? (
+            suggestedRecipes.slice(0, 5).map(renderRecipeCard)
+          ) : (
+            <View style={styles.noRecipesContainer}>
+              <Ionicons name="restaurant-outline" size={48} color={colors.textSecondary} />
+              <Text style={styles.noRecipesText}>No suggestions found</Text>
+              <Text style={styles.noRecipesSubtext}>Add ingredients to your fridge to see recipe suggestions</Text>
+            </View>
+          )}
+        </View>
+
+        {/* All Recipes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>All Recipes</Text>
+          {recipesLoading ? (
+            renderLoadingState()
+          ) : filteredRecipes.length > 0 ? (
+            filteredRecipes.slice(0, 10).map(renderRecipeCard)
+          ) : (
+            <View style={styles.noRecipesContainer}>
+              <Ionicons name="restaurant-outline" size={48} color={colors.textSecondary} />
+              <Text style={styles.noRecipesText}>No recipes found</Text>
+              <Text style={styles.noRecipesSubtext}>Try adjusting your filters or add some recipes</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -310,5 +364,29 @@ const styles = StyleSheet.create({
   metaText: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+  },
+  loadingText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+  },
+  noRecipesContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+  },
+  noRecipesText: {
+    ...typography.h3,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  noRecipesSubtext: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 }); 

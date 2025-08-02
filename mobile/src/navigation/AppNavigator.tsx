@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, View } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import RecipesScreen from '../screens/RecipesScreen';
@@ -13,9 +14,12 @@ import RecipeDetailScreen from '../screens/RecipeDetailScreen';
 import AddRecipeScreen from '../screens/AddRecipeScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
-import { colors } from '../theme';
+import LoginScreen from '../screens/LoginScreen';
+import { colors, spacing } from '../theme';
+import { useAuth } from '../contexts/AuthContext';
 
 export type RootStackParamList = {
+  Auth: undefined;
   Main: undefined;
   RecipeDetail: { recipeId: string; recipeTitle: string };
   AddRecipe: undefined;
@@ -80,14 +84,30 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
-        <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
-        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="RecipeDetail" component={RecipeDetailScreen} />
+            <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          </>
+        ) : (
+          <Stack.Screen name="Auth" component={LoginScreen} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
