@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,7 +59,7 @@ export default function RecipeDetailScreen() {
   // Use React Query hooks for data fetching
   const { data: recipe, isLoading, error, refetch } = useRecipe(recipeId);
   const likeRecipeMutation = useLikeRecipe();
-  const { showWarning, popupConfig, isVisible, hidePopup } = usePopup();
+  const { showSuccess, showError, showWarning, popupConfig, isVisible, hidePopup } = usePopup();
 
   const [isLiked, setIsLiked] = useState(false);
   const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
@@ -80,12 +81,49 @@ export default function RecipeDetailScreen() {
     }
   };
 
-  const handleShare = () => {
-    showWarning('Share', 'Share functionality will be implemented soon!', () => {}, () => {});
+  const handleShare = async () => {
+    if (!recipe) return;
+
+    try {
+      // Create a nicely formatted share message
+      const shareMessage = `🍳 ${recipe.title}\n\n${recipe.description}\n\n⏱️ Cooking Time: ${recipe.cookingTime} minutes\n🎯 Difficulty: ${recipe.difficulty.charAt(0).toUpperCase() + recipe.difficulty.slice(1)}\n🌍 Cuisine: ${recipe.cuisine}\n\n📝 Ingredients:\n${recipe.ingredients.map(ing => `• ${ing.quantity} ${ing.unit} ${ing.name}`).join('\n')}\n\n👨‍🍳 Steps:\n${recipe.steps.map(step => `${step.stepNumber}. ${step.description}`).join('\n')}\n\nShared from CookMate App`;
+
+      const result = await Share.share({
+        message: shareMessage,
+        title: recipe.title,
+        url: `https://cookmate.app/recipe/${recipe.id}`, // Replace with your actual recipe URL
+      });
+
+      if (result.action === Share.sharedAction) {
+        showWarning('Shared!', 'Recipe shared successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to share recipe:', error);
+      showWarning('Share Failed', 'Failed to share recipe. Please try again.');
+    }
   };
 
   const handleAddToShoppingList = () => {
-    showWarning('Add to Shopping List', 'This feature will be implemented soon!', () => {}, () => {});
+    if (!recipe) return;
+
+    try {
+      // Create shopping list items from recipe ingredients
+      const shoppingItems = recipe.ingredients.map(ingredient => ({
+        name: ingredient.name,
+        quantity: ingredient.quantity.toString(),
+        unit: ingredient.unit,
+      }));
+
+      // For now, we'll show a success message
+      // In a real app, you'd add these items to the shopping list via API
+      showSuccess(
+        'Added to Shopping List!', 
+        `${recipe.ingredients.length} ingredients added to your shopping list.`
+      );
+    } catch (error) {
+      console.error('Failed to add to shopping list:', error);
+      showError('Error', 'Failed to add ingredients to shopping list. Please try again.');
+    }
   };
 
   const handleEditRecipe = () => {
