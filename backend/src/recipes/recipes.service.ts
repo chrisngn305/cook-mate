@@ -31,23 +31,27 @@ export class RecipesService {
 
     // Save ingredients
     if (createRecipeDto.ingredients) {
-      const ingredients = createRecipeDto.ingredients.map(ingredient => 
-        this.ingredientsRepository.create({
-          ...ingredient,
+      const ingredients = createRecipeDto.ingredients.map((ingredient) => {
+        const { order, ...ingredientWithoutOrder } = ingredient;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        return this.ingredientsRepository.create({
+          ...ingredientWithoutOrder,
           recipeId: savedRecipe.id,
-        })
-      );
+        });
+      });
       await this.ingredientsRepository.save(ingredients);
     }
 
     // Save steps
     if (createRecipeDto.steps) {
-      const steps = createRecipeDto.steps.map(step => 
-        this.stepsRepository.create({
-          ...step,
+      const steps = createRecipeDto.steps.map((step) => {
+        const { order, ...stepWithoutOrder } = step;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        return this.stepsRepository.create({
+          ...stepWithoutOrder,
           recipeId: savedRecipe.id,
-        })
-      );
+        });
+      });
       await this.stepsRepository.save(steps);
     }
 

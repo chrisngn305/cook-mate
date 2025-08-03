@@ -17,13 +17,15 @@ export class CreateRecipeIngredientDto {
   @IsString()
   notes?: string;
 
+  @IsOptional()
   @IsNumber()
-  order: number;
+  order?: number;
 }
 
 export class CreateRecipeStepDto {
+  @IsOptional()
   @IsNumber()
-  order: number;
+  order?: number;
 
   @IsString()
   description: string;

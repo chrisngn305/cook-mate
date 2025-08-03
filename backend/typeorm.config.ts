@@ -17,6 +17,6 @@ export default new DataSource({
   database: process.env.DB_NAME || 'cook_mate',
   entities: [User, Recipe, RecipeIngredient, RecipeStep, RecipeTag, FridgeIngredient, ShoppingList, ShoppingListItem],
   migrations: ['src/migrations/*.ts'],
-  synchronize: false,
+  synchronize: false, // Disabled since we manually fixed the schema
   logging: process.env.NODE_ENV === 'development',
 }); 
