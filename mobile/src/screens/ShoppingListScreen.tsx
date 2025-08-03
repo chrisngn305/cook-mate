@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { useShoppingLists, useAddShoppingListItem, useToggleShoppingListItem, useDeleteShoppingList } from '../services/hooks';
+import { useShoppingLists, useAddShoppingListItem, useToggleShoppingListItem, useDeleteShoppingList, useDeleteShoppingListItem } from '../services/hooks';
 import { usePopup } from '../hooks/usePopup';
 import CustomPopup from '../components/CustomPopup';
 
@@ -32,6 +32,7 @@ export default function ShoppingListScreen() {
   const addItemMutation = useAddShoppingListItem();
   const toggleItemMutation = useToggleShoppingListItem();
   const deleteListMutation = useDeleteShoppingList();
+  const deleteItemMutation = useDeleteShoppingListItem();
 
   const addItem = async () => {
     if (!newItem.name.trim()) {
@@ -75,11 +76,14 @@ export default function ShoppingListScreen() {
   };
 
   const removeItem = async (itemId: string) => {
+    if (!selectedListId) return;
+    
     try {
-      // Note: This would need a removeItemMutation hook
-      showWarning('Remove Item', 'Are you sure you want to remove this item?', () => {
-        // Handle removal logic here
-      }, () => {});
+      await deleteItemMutation.mutateAsync({
+        listId: selectedListId,
+        itemId: itemId
+      });
+      showSuccess('Success', 'Item removed from shopping list!');
     } catch (error: any) {
       showError('Error', 'Failed to remove item. Please try again.');
     }
@@ -96,6 +100,14 @@ export default function ShoppingListScreen() {
 
   // Get the first list or create a default one
   const currentList = shoppingLists.length > 0 ? shoppingLists[0] : null;
+  
+  // Set selectedListId to the first list if not already set
+  React.useEffect(() => {
+    if (shoppingLists.length > 0 && !selectedListId) {
+      setSelectedListId(shoppingLists[0].id);
+    }
+  }, [shoppingLists, selectedListId]);
+  
   const items = currentList?.items || [];
   const pendingItems = items.filter((item: any) => !item.isCompleted);
   const completedItems = items.filter((item: any) => item.isCompleted);
@@ -169,7 +181,7 @@ export default function ShoppingListScreen() {
         </TouchableOpacity>
       </View>
 
-      {isLoading ? (
+      {listsLoading ? (
         renderLoadingState()
       ) : (
         <>
@@ -248,7 +260,7 @@ export default function ShoppingListScreen() {
           )}
 
           {/* Empty State */}
-          {items.length === 0 && !isLoading && renderEmptyState()}
+          {items.length === 0 && !listsLoading && renderEmptyState()}
         </>
       )}
 
