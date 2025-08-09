@@ -28,9 +28,9 @@ export default function ProfileScreen() {
     { title: 'My Recipes', icon: 'book-outline', action: () => {} },
     { title: 'Favorites', icon: 'heart-outline', action: () => {} },
     { title: 'Shopping History', icon: 'time-outline', action: () => {} },
-    { title: 'Settings', icon: 'settings-outline', action: () => {} },
-    { title: 'Help & Support', icon: 'help-circle-outline', action: () => {} },
-    { title: 'About', icon: 'information-circle-outline', action: () => {} },
+    { title: 'Settings', icon: 'settings-outline', action: () => navigation.navigate('Settings') },
+    { title: 'Help & Support', icon: 'help-circle-outline', action: () => navigation.navigate('HelpSupport') },
+    { title: 'About', icon: 'information-circle-outline', action: () => navigation.navigate('About') },
   ];
 
   const handleLogout = async () => {
@@ -183,6 +183,17 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <CustomPopup
+        visible={isVisible}
+        title={popupConfig?.title || ''}
+        message={popupConfig?.message || ''}
+        type={popupConfig?.type}
+        confirmText={popupConfig?.confirmText}
+        cancelText={popupConfig?.cancelText}
+        showCancel={popupConfig?.showCancel}
+        onConfirm={popupConfig?.onConfirm}
+        onCancel={popupConfig?.onCancel}
+      />
     </SafeAreaView>
   );
 }

@@ -17,7 +17,7 @@ import { useRecipes } from '../services/hooks';
 
 export default function RecipesScreen() {
   const navigation = useNavigation<any>();
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
   // Fetch recipes from API
   const { data: recipes = [], isLoading } = useRecipes();

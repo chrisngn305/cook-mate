@@ -14,6 +14,9 @@ import RecipeDetailScreen from '../screens/RecipeDetailScreen';
 import AddRecipeScreen from '../screens/AddRecipeScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import AboutScreen from '../screens/AboutScreen';
+import HelpSupportScreen from '../screens/HelpSupportScreen';
 import LoginScreen from '../screens/LoginScreen';
 import { colors, spacing } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +29,9 @@ export type RootStackParamList = {
   EditRecipe: { recipeId: string };
   EditProfile: undefined;
   ChangePassword: undefined;
+  Settings: undefined;
+  About: undefined;
+  HelpSupport: undefined;
 };
 
 export type MainTabParamList = {
@@ -104,6 +110,9 @@ export default function AppNavigator() {
             <Stack.Screen name="AddRecipe" component={AddRecipeScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="About" component={AboutScreen} />
+            <Stack.Screen name="HelpSupport" component={HelpSupportScreen} />
           </>
         ) : (
           <Stack.Screen name="Auth" component={LoginScreen} />

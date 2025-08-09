@@ -168,22 +168,6 @@ export default function EditProfileScreen() {
 
         {/* Additional Options */}
         <View style={styles.optionsSection}>
-          <TouchableOpacity style={styles.optionItem}>
-            <View style={styles.optionLeft}>
-              <Ionicons name="notifications-outline" size={20} color={colors.textSecondary} />
-              <Text style={styles.optionText}>Notification Settings</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.optionItem}>
-            <View style={styles.optionLeft}>
-              <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
-              <Text style={styles.optionText}>Privacy Settings</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-
           <TouchableOpacity 
             style={styles.optionItem}
             onPress={() => navigation.navigate('ChangePassword')}
