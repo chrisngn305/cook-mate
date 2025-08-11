@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -12,9 +14,17 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
-    if (user && await this.usersService.validatePassword(user, password)) {
-      const { password, ...result } = user;
-      return result;
+    this.logger.debug(`Validating user: ${email}, user found: ${!!user}`);
+    
+    if (user) {
+      this.logger.debug(`User found, validating password. User password hash: ${user.password ? 'exists' : 'missing'}`);
+      const isValidPassword = await this.usersService.validatePassword(user, password);
+      this.logger.debug(`Password validation result: ${isValidPassword}`);
+      
+      if (isValidPassword) {
+        const { password, ...result } = user;
+        return result;
+      }
     }
     return null;
   }

@@ -15,7 +15,16 @@ export class FridgeIngredient {
   @Column({ nullable: true })
   unit?: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'date', nullable: true, transformer: {
+    to: (value: Date | string) => {
+      if (!value) return null;
+      if (typeof value === 'string') {
+        return value.split('T')[0]; // Extract just the date part from ISO string
+      }
+      return value.toISOString().split('T')[0];
+    },
+    from: (value: string) => value ? new Date(value) : null
+  }})
   expiryDate?: Date;
 
   @Column({ default: false })
