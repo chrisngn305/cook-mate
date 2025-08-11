@@ -6,19 +6,36 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList, MainTabParamList } from '../navigation/AppNavigator';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { useRecipes, useFridgeIngredients, useSearchRecipesByIngredients } from '../services/hooks';
+import { FilterModal, QuickFilters, RecipeSection } from '../components';
 
 export default function HomeScreen() {
-  const navigation = useNavigation<any>();
+  type HomeScreenNavigationProp = CompositeNavigationProp<
+    BottomTabNavigationProp<MainTabParamList, 'Home'>,
+    NativeStackNavigationProp<RootStackParamList>
+  >;
+  
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    difficulty: '',
+    maxCookingTime: '',
+    cuisine: '',
+    dietaryRestrictions: [],
+    tags: [],
+    ingredients: [],
+  });
   // Fetch data from API
   const { data: recipes = [], isLoading: recipesLoading } = useRecipes();
   const { data: fridgeIngredients = [], isLoading: fridgeLoading } = useFridgeIngredients();
@@ -26,13 +43,6 @@ export default function HomeScreen() {
   // Get ingredient names for recipe search
   const ingredientNames = fridgeIngredients.map(ing => ing.name);
   const { data: suggestedRecipes = [], isLoading: suggestionsLoading } = useSearchRecipesByIngredients(ingredientNames);
-
-  const quickFilters = [
-    { id: 'easy', label: 'Easy to Cook', icon: 'checkmark-circle' },
-    { id: 'short', label: 'Quick (< 30min)', icon: 'time' },
-    { id: 'cold', label: 'Cold Day', icon: 'snow' },
-    { id: 'party', label: 'Party', icon: 'people' },
-  ];
 
   // Filter recipes based on selected filters
   const filteredRecipes = recipes.filter(recipe => {
@@ -65,46 +75,6 @@ export default function HomeScreen() {
     });
   };
 
-  const renderRecipeCard = (recipe: any) => (
-    <TouchableOpacity 
-      key={recipe.id} 
-      style={styles.recipeCard}
-      onPress={() => navigation.navigate('RecipeDetail', { 
-        recipeId: recipe.id,
-        recipeTitle: recipe.title 
-      })}
-    >
-      <View style={styles.recipeImage}>
-        {recipe.image ? (
-          <Ionicons name="image" size={32} color={colors.primary} />
-        ) : (
-          <Ionicons name="restaurant" size={32} color={colors.primary} />
-        )}
-      </View>
-      <View style={styles.recipeInfo}>
-        <Text style={styles.recipeTitle}>{recipe.title}</Text>
-        <View style={styles.recipeMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="time" size={14} color={colors.textSecondary} />
-            <Text style={styles.metaText}>{recipe.cookingTime} min</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="star" size={14} color={colors.textSecondary} />
-            <Text style={styles.metaText}>{recipe.difficulty}</Text>
-          </View>
-        </View>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-    </TouchableOpacity>
-  );
-
-  const renderLoadingState = () => (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.loadingText}>Loading recipes...</Text>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -130,88 +100,61 @@ export default function HomeScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
+            <TouchableOpacity 
+              style={styles.filterButton}
+              onPress={() => setShowFiltersModal(true)}
+            >
+              <Ionicons name="filter" size={20} color={colors.primary} />
+            </TouchableOpacity>
+
           </View>
         </View>
 
         {/* Quick Filters */}
-        <View style={styles.section}>
-          <View style={styles.filterHeader}>
-            <Text style={styles.sectionTitle}>Quick Filters</Text>
-            {selectedFilters.length > 0 && (
-              <TouchableOpacity 
-                style={styles.clearFiltersButton}
-                onPress={() => setSelectedFilters([])}
-              >
-                <Text style={styles.clearFiltersText}>Clear</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.filtersContainer}>
-              {quickFilters.map((filter) => {
-                const isSelected = selectedFilters.includes(filter.id);
-                return (
-                  <TouchableOpacity 
-                    key={filter.id} 
-                    style={[
-                      styles.filterChip,
-                      isSelected && styles.filterChipSelected
-                    ]}
-                    onPress={() => handleFilterPress(filter.id)}
-                  >
-                    <Ionicons 
-                      name={filter.icon as any} 
-                      size={16} 
-                      color={isSelected ? colors.surface : colors.primary} 
-                    />
-                    <Text style={[
-                      styles.filterText,
-                      isSelected && styles.filterTextSelected
-                    ]}>
-                      {filter.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-        </View>
+        <QuickFilters
+          selectedFilters={selectedFilters}
+          onFilterPress={handleFilterPress}
+          onClearFilters={() => setSelectedFilters([])}
+        />
 
         {/* Fridge Suggestions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fridge Suggestions</Text>
-          <Text style={styles.sectionSubtitle}>
-            Recipes based on your ingredients
-          </Text>
-          {suggestionsLoading ? (
-            renderLoadingState()
-          ) : suggestedRecipes.length > 0 ? (
-            suggestedRecipes.slice(0, 5).map(renderRecipeCard)
-          ) : (
-            <View style={styles.noRecipesContainer}>
-              <Ionicons name="restaurant-outline" size={48} color={colors.textSecondary} />
-              <Text style={styles.noRecipesText}>No suggestions found</Text>
-              <Text style={styles.noRecipesSubtext}>Add ingredients to your fridge to see recipe suggestions</Text>
-            </View>
-          )}
-        </View>
+        <RecipeSection
+          title="Fridge Suggestions"
+          subtitle="Recipes based on your ingredients"
+          recipes={suggestedRecipes}
+          isLoading={suggestionsLoading}
+          onRecipePress={(recipe) => navigation.navigate('RecipeDetail', { 
+            recipeId: recipe.id,
+            recipeTitle: recipe.title 
+          })}
+          maxRecipes={5}
+          emptyStateText="No suggestions found"
+          emptyStateSubtext="Add ingredients to your fridge to see recipe suggestions"
+        />
 
         {/* All Recipes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All Recipes</Text>
-          {recipesLoading ? (
-            renderLoadingState()
-          ) : filteredRecipes.length > 0 ? (
-            filteredRecipes.slice(0, 10).map(renderRecipeCard)
-          ) : (
-            <View style={styles.noRecipesContainer}>
-              <Ionicons name="restaurant-outline" size={48} color={colors.textSecondary} />
-              <Text style={styles.noRecipesText}>No recipes found</Text>
-              <Text style={styles.noRecipesSubtext}>Try adjusting your filters or add some recipes</Text>
-            </View>
-          )}
-        </View>
+        <RecipeSection
+          title="All Recipes"
+          recipes={filteredRecipes}
+          isLoading={recipesLoading}
+          onRecipePress={(recipe) => navigation.navigate('RecipeDetail', { 
+            recipeId: recipe.id,
+            recipeTitle: recipe.title 
+          })}
+          maxRecipes={10}
+          emptyStateText="No recipes found"
+          emptyStateSubtext="Try adjusting your filters or add some recipes"
+        />
       </ScrollView>
+
+      {/* Filters Modal */}
+      <FilterModal
+        visible={showFiltersModal}
+        onClose={() => setShowFiltersModal(false)}
+        advancedFilters={advancedFilters}
+        onFiltersChange={setAdvancedFilters}
+        fridgeIngredients={fridgeIngredients}
+      />
     </SafeAreaView>
   );
 }
@@ -265,128 +208,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlignVertical: 'center',
   },
-  section: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xxl,
-  },
-  sectionTitle: {
-    ...typography.h2,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  filterHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  clearFiltersButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.pill,
-  },
-  clearFiltersText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  sectionSubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-  },
-  filtersContainer: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  filterText: {
-    ...typography.bodySmall,
-    color: colors.text,
-  },
-  filterChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterTextSelected: {
-    color: colors.surface,
-  },
-  recipeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  recipeImage: {
-    width: 60,
-    height: 60,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.lg,
-  },
-  recipeInfo: {
-    flex: 1,
-  },
-  recipeTitle: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  recipeMeta: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  metaText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxl,
-  },
-  loadingText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-  },
-  noRecipesContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxl,
-  },
-  noRecipesText: {
-    ...typography.h3,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  noRecipesSubtext: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  filterButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
   },
 }); 
