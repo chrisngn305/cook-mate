@@ -4,6 +4,8 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '../theme';
@@ -19,6 +21,9 @@ interface RecipeSectionProps {
   emptyStateIcon?: string;
   emptyStateText: string;
   emptyStateSubtext: string;
+  horizontal?: boolean;
+  showSeeAll?: boolean;
+  onSeeAllPress?: () => void;
 }
 
 export default function RecipeSection({
@@ -31,6 +36,9 @@ export default function RecipeSection({
   emptyStateIcon = 'restaurant-outline',
   emptyStateText,
   emptyStateSubtext,
+  horizontal = false,
+  showSeeAll = false,
+  onSeeAllPress,
 }: RecipeSectionProps) {
   const renderLoadingState = () => (
     <View style={styles.loadingContainer}>
@@ -47,22 +55,56 @@ export default function RecipeSection({
     </View>
   );
 
+  const renderRecipes = () => {
+    if (horizontal) {
+      return (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalScrollContainer}
+        >
+          {recipes.slice(0, maxRecipes).map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onPress={() => onRecipePress(recipe)}
+              horizontal={true}
+            />
+          ))}
+        </ScrollView>
+      );
+    }
+
+    return recipes.slice(0, maxRecipes).map((recipe) => (
+      <RecipeCard
+        key={recipe.id}
+        recipe={recipe}
+        onPress={() => onRecipePress(recipe)}
+        horizontal={false}
+      />
+    ));
+  };
+
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {subtitle && (
-        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-      )}
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          {subtitle && (
+            <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+          )}
+        </View>
+        {showSeeAll && onSeeAllPress && (
+          <TouchableOpacity onPress={onSeeAllPress}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      
       {isLoading ? (
         renderLoadingState()
       ) : recipes.length > 0 ? (
-        recipes.slice(0, maxRecipes).map((recipe) => (
-          <RecipeCard
-            key={recipe.id}
-            recipe={recipe}
-            onPress={() => onRecipePress(recipe)}
-          />
-        ))
+        renderRecipes()
       ) : (
         renderEmptyState()
       )}
@@ -75,6 +117,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.xxl,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.lg,
+  },
   sectionTitle: {
     ...typography.h2,
     color: colors.text,
@@ -83,7 +131,15 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-    marginBottom: spacing.lg,
+    marginBottom: 0,
+  },
+  seeAllText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  horizontalScrollContainer: {
+    paddingRight: spacing.lg,
   },
   loadingContainer: {
     alignItems: 'center',

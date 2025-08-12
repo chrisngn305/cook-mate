@@ -30,7 +30,6 @@ export default function QuickFilters({
   return (
     <View style={styles.section}>
       <View style={styles.filterHeader}>
-        <Text style={styles.sectionTitle}>Quick Filters</Text>
         {selectedFilters.length > 0 && (
           <TouchableOpacity 
             style={styles.clearFiltersButton}

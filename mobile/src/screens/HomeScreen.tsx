@@ -128,6 +128,9 @@ export default function HomeScreen() {
             recipeTitle: recipe.title 
           })}
           maxRecipes={5}
+          horizontal={true}
+          showSeeAll={true}
+          onSeeAllPress={() => navigation.navigate('Recipes')}
           emptyStateText="No suggestions found"
           emptyStateSubtext="Add ingredients to your fridge to see recipe suggestions"
         />
@@ -142,6 +145,9 @@ export default function HomeScreen() {
             recipeTitle: recipe.title 
           })}
           maxRecipes={10}
+          horizontal={true}
+          showSeeAll={true}
+          onSeeAllPress={() => navigation.navigate('Recipes')}
           emptyStateText="No recipes found"
           emptyStateSubtext="Try adjusting your filters or add some recipes"
         />
