@@ -25,21 +25,10 @@ export default function Avatar({
   style,
 }: AvatarProps) {
   const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false);
 
   const handleImageError = (error: NativeSyntheticEvent<ImageErrorEventData>) => {
     console.log('Avatar image failed to load:', error.nativeEvent.error);
     setImageError(true);
-    setImageLoading(false);
-  };
-
-  const handleImageLoadStart = () => {
-    setImageLoading(true);
-    setImageError(false);
-  };
-
-  const handleImageLoadEnd = () => {
-    setImageLoading(false);
   };
 
   const avatarStyles = [
@@ -61,8 +50,8 @@ export default function Avatar({
     },
   ];
 
-  // Show fallback icon if no source, image failed to load, or while loading
-  if (!source || imageError || imageLoading) {
+  // Show fallback icon if no source or image failed to load
+  if (!source || imageError) {
     return (
       <View style={avatarStyles}>
         <Ionicons 
@@ -80,8 +69,7 @@ export default function Avatar({
         source={{ uri: source }}
         style={imageStyles}
         onError={handleImageError}
-        onLoadStart={handleImageLoadStart}
-        onLoadEnd={handleImageLoadEnd}
+        onLoad={() => setImageError(false)}
       />
     </View>
   );

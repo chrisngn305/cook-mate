@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +14,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { logout } = useAuth();
   const { showConfirmation, showError, popupConfig, isVisible, hidePopup } = usePopup();
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   
   // Fetch user profile from API
   const { data: user, isLoading, error } = useProfile();
@@ -24,6 +25,12 @@ export default function ProfileScreen() {
     { label: 'Shopping Lists', value: user?.shoppingListsCount?.toString() || '0', icon: 'list' },
     { label: 'Days Streak', value: user?.daysStreak?.toString() || '0', icon: 'flame' },
   ];
+
+  useEffect(() => {
+    if (user?.avatar) {
+      setProfileImage(user.avatar);
+    }
+  }, [user?.avatar]);
 
   const menuItems = [
     { title: 'My Recipes', icon: 'book-outline', action: () => {} },
@@ -96,14 +103,12 @@ export default function ProfileScreen() {
 
         {/* Profile Info */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <Avatar 
-              source={user?.avatar}
-              size={80}
-              fallbackIcon="person"
-              fallbackColor={colors.primary}
-            />
-          </View>
+          <Avatar 
+            source={profileImage} 
+            size={100} 
+            fallbackIcon="person"
+            fallbackColor={colors.primary}
+          />
           <Text style={styles.name}>{user?.name || 'User'}</Text>
           <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
         </View>
@@ -224,9 +229,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.lg,
   },
-  avatarContainer: {
-    marginBottom: spacing.lg,
-  },
+
 
   name: {
     ...typography.h2,
@@ -392,4 +395,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+
 }); 

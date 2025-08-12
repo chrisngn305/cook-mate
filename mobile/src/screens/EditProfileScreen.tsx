@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import FormInput from '../components/FormInput';
-import { useProfile, useUpdateProfile, useUpdateProfileAvatar } from '../services/hooks';
+import Avatar from '../components/Avatar';
+import { useProfile, useUpdateProfile } from '../services/hooks';
 import { usePopup } from '../hooks/usePopup';
 import CustomPopup from '../components/CustomPopup';
 
@@ -16,13 +16,11 @@ export default function EditProfileScreen() {
   // Use React Query hooks
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
-  const updateAvatarMutation = useUpdateProfileAvatar();
   const { showSuccess, showError, showConfirmation, popupConfig, isVisible, hidePopup } = usePopup();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Load current profile data when profile is loaded
@@ -30,7 +28,6 @@ export default function EditProfileScreen() {
     if (profile) {
       setName(profile.name || '');
       setEmail(profile.email || '');
-      setProfileImage(profile.avatar || null);
       // Note: bio is not part of the backend User entity, so we'll keep it local
     }
   }, [profile]);
@@ -55,13 +52,7 @@ export default function EditProfileScreen() {
       // Update profile using React Query mutation
       await updateProfileMutation.mutateAsync(updateData);
 
-      // Update avatar if changed
-      if (profileImage && profileImage.startsWith('file://')) {
-        // TODO: Implement image upload to server and get URL
-        // For now, we'll just update the avatar field with the local URI
-        // In a real app, you'd upload the image to a server first
-        await updateAvatarMutation.mutateAsync(profileImage);
-      }
+
 
       showSuccess('Success', 'Profile updated successfully!', () => {
         navigation.goBack();
@@ -79,6 +70,11 @@ export default function EditProfileScreen() {
   };
 
   const pickImage = async () => {
+    showError('Image Upload', 'Image upload functionality is not yet implemented. Please wait for the next update.');
+    return;
+    
+    // TODO: Implement image upload when backend endpoint is ready
+    /*
     try {
       // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -101,6 +97,7 @@ export default function EditProfileScreen() {
     } catch (error) {
       showError('Error', 'Failed to pick image. Please try again.');
     }
+    */
   };
 
   return (
@@ -121,13 +118,12 @@ export default function EditProfileScreen() {
 
         {/* Profile Picture */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatar}>
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-            ) : (
-              <Ionicons name="person" size={40} color={colors.primary} />
-            )}
-          </View>
+          <Avatar 
+            source={profile?.avatar} 
+            size={100} 
+            fallbackIcon="person"
+            fallbackColor={colors.primary}
+          />
           <TouchableOpacity style={styles.changePhotoButton} onPress={pickImage}>
             <Text style={styles.changePhotoText}>Change Photo</Text>
           </TouchableOpacity>
@@ -238,20 +234,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.lg,
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  avatarImage: {
-    width: 100,
-    height: 100,
-    borderRadius: borderRadius.pill,
-  },
+
   changePhotoButton: {
     padding: spacing.sm,
   },

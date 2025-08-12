@@ -1,13 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Avatar from '../components/Avatar';
 
 export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Manage your account</Text>
+        <View style={styles.profileSection}>
+          <Avatar source={null} size={100} />
+          <Text style={styles.name}>User Name</Text>
+          <Text style={styles.email}>user@example.com</Text>
+        </View>
+        
+        <View style={styles.actionsSection}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text style={styles.actionButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -24,15 +34,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  title: {
-    fontSize: 28,
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  name: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    marginTop: 16,
+    marginBottom: 8,
   },
-  subtitle: {
+  email: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  actionsSection: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  actionButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 
