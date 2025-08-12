@@ -4,6 +4,7 @@ export { default as DifficultySelector } from './DifficultySelector';
 export { default as IngredientsList } from './IngredientsList';
 export { default as StepsList } from './StepsList';
 export { default as ImageUpload } from './ImageUpload';
+export { default as Avatar } from './Avatar';
 export { default as CustomPopup } from './CustomPopup';
 export { default as FilterModal } from './FilterModal';
 export { default as QuickFilters } from './QuickFilters';

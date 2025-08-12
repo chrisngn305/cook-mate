@@ -7,6 +7,7 @@ import { colors, typography, spacing, borderRadius } from '../theme';
 import { useProfile } from '../services/hooks';
 import { useAuth } from '../contexts/AuthContext';
 import { usePopup } from '../hooks/usePopup';
+import { Avatar } from '../components';
 import CustomPopup from '../components/CustomPopup';
 
 export default function ProfileScreen() {
@@ -95,12 +96,13 @@ export default function ProfileScreen() {
 
         {/* Profile Info */}
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            {user?.avatar ? (
-              <Ionicons name="image" size={40} color={colors.primary} />
-            ) : (
-              <Ionicons name="person" size={40} color={colors.primary} />
-            )}
+          <View style={styles.avatarContainer}>
+            <Avatar 
+              source={user?.avatar}
+              size={80}
+              fallbackIcon="person"
+              fallbackColor={colors.primary}
+            />
           </View>
           <Text style={styles.name}>{user?.name || 'User'}</Text>
           <Text style={styles.email}>{user?.email || 'user@example.com'}</Text>
@@ -222,15 +224,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.lg,
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
     marginBottom: spacing.lg,
   },
+
   name: {
     ...typography.h2,
     color: colors.text,
