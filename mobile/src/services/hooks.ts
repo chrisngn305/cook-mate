@@ -303,4 +303,28 @@ export const useUpdateProfileAvatar = () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
+};
+
+export const useUploadAvatarImage = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (imageFile: File) => apiService.uploadAvatarImage(imageFile),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+};
+
+export const useUploadRecipeImage = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ recipeId, imageFile }: { recipeId: string; imageFile: File }) =>
+      apiService.uploadRecipeImage(recipeId, imageFile),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      queryClient.invalidateQueries({ queryKey: ['recipe', variables.recipeId] });
+    },
+  });
 }; 

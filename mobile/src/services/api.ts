@@ -204,6 +204,28 @@ class ApiService {
     });
   }
 
+  async uploadAvatarImage(imageFile: File): Promise<{ avatar: string; user: User }> {
+    const formData = new FormData();
+    formData.append('avatar', imageFile);
+    
+    return this.request<{ avatar: string; user: User }>('/users/profile/avatar/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let the browser set the Content-Type for FormData
+    });
+  }
+
+  async uploadRecipeImage(recipeId: string, imageFile: File): Promise<{ image: string; recipe: any }> {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    return this.request<{ image: string; recipe: any }>(`/recipes/${recipeId}/image`, {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let the browser set the Content-Type for FormData
+    });
+  }
+
   // Recipes
   async getRecipes(filters?: any): Promise<Recipe[]> {
     const queryParams = filters ? new URLSearchParams(filters).toString() : '';

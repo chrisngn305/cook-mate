@@ -14,7 +14,7 @@ interface ImageUploadProps {
 
 export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe Image' }: ImageUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { showError, showConfirmation, showWarning, popupConfig, isVisible, hidePopup } = usePopup();
+  const { showError, showConfirmation, popupConfig, isVisible, hidePopup } = usePopup();
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,30 +48,7 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
     }
   };
 
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      showError('Permission Required', 'Sorry, we need camera permissions to take photos.');
-      return;
-    }
 
-    setIsLoading(true);
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        onImageChange(result.assets[0].uri);
-      }
-    } catch (error) {
-      showError('Error', 'Failed to take photo. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const removeImage = () => {
     showConfirmation(
@@ -83,12 +60,8 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
   };
 
   const showImageOptions = () => {
-    showConfirmation(
-      'Add Recipe Image',
-      'Choose how you want to add an image',
-      () => takePhoto(),
-      () => pickImage()
-    );
+    // Only show photo library option, no camera
+    pickImage();
   };
 
   return (
@@ -115,9 +88,9 @@ export default function ImageUpload({ imageUri, onImageChange, label = 'Recipe I
             </View>
           ) : (
             <>
-              <Ionicons name="camera" size={32} color={colors.primary} />
+              <Ionicons name="images" size={32} color={colors.primary} />
               <Text style={styles.uploadText}>Add Recipe Image</Text>
-              <Text style={styles.uploadSubtext}>Tap to upload or take a photo</Text>
+              <Text style={styles.uploadSubtext}>Tap to select from photo library</Text>
             </>
           )}
         </TouchableOpacity>

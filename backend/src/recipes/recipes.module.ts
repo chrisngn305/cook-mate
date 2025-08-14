@@ -6,9 +6,10 @@ import { Recipe } from './recipe.entity';
 import { RecipeIngredient } from './recipe-ingredient.entity';
 import { RecipeStep } from './recipe-step.entity';
 import { RecipeTag } from './recipe-tag.entity';
+import { FileUploadModule } from '../common/services/file-upload.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Recipe, RecipeIngredient, RecipeStep, RecipeTag])],
+  imports: [TypeOrmModule.forFeature([Recipe, RecipeIngredient, RecipeStep, RecipeTag]), FileUploadModule],
   controllers: [RecipesController],
   providers: [RecipesService],
   exports: [RecipesService],

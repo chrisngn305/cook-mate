@@ -10,11 +10,15 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto, UserPreferencesDto } from './dto/update-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { FileUploadService } from '../common/services/file-upload.service';
 
 interface RequestWithUser extends Request {
   user: {
@@ -25,7 +29,10 @@ interface RequestWithUser extends Request {
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -69,6 +76,26 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   updateAvatar(@Request() req: RequestWithUser, @Body() body: { avatar: string }) {
     return this.usersService.updateAvatar(req.user.id, body.avatar);
+  }
+
+  @Post('profile/avatar/upload')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(
+    @Request() req: RequestWithUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    // Upload the avatar image
+    const avatarPath = await this.fileUploadService.uploadAvatarImage(file);
+    
+    // Update the user with the new avatar path
+    const updatedUser = await this.usersService.updateAvatar(req.user.id, avatarPath);
+    
+    return {
+      message: 'Avatar uploaded successfully',
+      avatar: avatarPath,
+      user: updatedUser,
+    };
   }
 
   @Patch(':id')

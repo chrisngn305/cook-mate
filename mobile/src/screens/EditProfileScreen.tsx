@@ -6,9 +6,10 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, typography, spacing, borderRadius } from '../theme';
 import FormInput from '../components/FormInput';
 import Avatar from '../components/Avatar';
-import { useProfile, useUpdateProfile } from '../services/hooks';
+import { useProfile, useUpdateProfile, useUploadAvatarImage } from '../services/hooks';
 import { usePopup } from '../hooks/usePopup';
 import CustomPopup from '../components/CustomPopup';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
@@ -16,7 +17,10 @@ export default function EditProfileScreen() {
   // Use React Query hooks
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
+  const uploadAvatarMutation = useUploadAvatarImage();
   const { showSuccess, showError, showConfirmation, popupConfig, isVisible, hidePopup } = usePopup();
+  
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,6 +32,7 @@ export default function EditProfileScreen() {
     if (profile) {
       setName(profile.name || '');
       setEmail(profile.email || '');
+      setProfileImage(profile.avatar || null);
       // Note: bio is not part of the backend User entity, so we'll keep it local
     }
   }, [profile]);
@@ -49,10 +54,25 @@ export default function EditProfileScreen() {
         updateData.email = email.trim();
       }
 
-      // Update profile using React Query mutation
+            // Update profile using React Query mutation
       await updateProfileMutation.mutateAsync(updateData);
 
-
+      // Update avatar if changed
+      if (profileImage && profileImage.startsWith('file://')) {
+        try {
+          // Convert the local URI to a File object for upload
+          const response = await fetch(profileImage);
+          const blob = await response.blob();
+          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+          
+          // Upload the avatar image
+          await uploadAvatarMutation.mutateAsync(file);
+        } catch (error) {
+          console.error('Failed to upload avatar:', error);
+          showError('Error', 'Failed to upload avatar image');
+          return;
+        }
+      }
 
       showSuccess('Success', 'Profile updated successfully!', () => {
         navigation.goBack();
@@ -70,11 +90,6 @@ export default function EditProfileScreen() {
   };
 
   const pickImage = async () => {
-    showError('Image Upload', 'Image upload functionality is not yet implemented. Please wait for the next update.');
-    return;
-    
-    // TODO: Implement image upload when backend endpoint is ready
-    /*
     try {
       // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -97,7 +112,6 @@ export default function EditProfileScreen() {
     } catch (error) {
       showError('Error', 'Failed to pick image. Please try again.');
     }
-    */
   };
 
   return (
@@ -119,7 +133,7 @@ export default function EditProfileScreen() {
         {/* Profile Picture */}
         <View style={styles.avatarSection}>
           <Avatar 
-            source={profile?.avatar} 
+            source={profileImage || profile?.avatar} 
             size={100} 
             fallbackIcon="person"
             fallbackColor={colors.primary}

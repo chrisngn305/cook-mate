@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { RecipesService } from './recipes.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { FileUploadService } from '../common/services/file-upload.service';
 
 @Controller('recipes')
 export class RecipesController {
-  constructor(private readonly recipesService: RecipesService) {}
+  constructor(
+    private readonly recipesService: RecipesService,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
@@ -58,5 +63,26 @@ export class RecipesController {
   @UseGuards(AuthGuard('jwt'))
   incrementLikes(@Param('id') id: string) {
     return this.recipesService.incrementLikes(id);
+  }
+
+  @Post(':id/image')
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('image'))
+  async uploadRecipeImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ) {
+    // Upload the image
+    const imagePath = await this.fileUploadService.uploadRecipeImage(file);
+    
+    // Update the recipe with the new image path
+    const updatedRecipe = await this.recipesService.update(id, { image: imagePath }, req.user.id);
+    
+    return {
+      message: 'Recipe image uploaded successfully',
+      image: imagePath,
+      recipe: updatedRecipe,
+    };
   }
 } 

@@ -19,7 +19,7 @@ import {
   ImageUpload,
   CustomPopup,
 } from '../components';
-import { useCreateRecipe, useUpdateRecipe } from '../services/hooks';
+import { useCreateRecipe, useUpdateRecipe, useUploadRecipeImage } from '../services/hooks';
 import { usePopup } from '../hooks/usePopup';
 
 export default function AddRecipeScreen() {
@@ -30,6 +30,7 @@ export default function AddRecipeScreen() {
   
   const createRecipeMutation = useCreateRecipe();
   const updateRecipeMutation = useUpdateRecipe();
+  const uploadRecipeImageMutation = useUploadRecipeImage();
   const { showSuccess, showError, popupConfig, isVisible, hidePopup } = usePopup();
   
   const [title, setTitle] = useState('');
@@ -91,20 +92,41 @@ export default function AddRecipeScreen() {
     };
 
     try {
+      let savedRecipe;
+      
       if (isEditMode) {
         // Update existing recipe
-        await updateRecipeMutation.mutateAsync({ id: route.params?.recipeId, recipeData: recipe });
+        savedRecipe = await updateRecipeMutation.mutateAsync({ id: route.params?.recipeId, recipeData: recipe });
         showSuccess('Success', 'Recipe updated successfully!', () => {
           navigation.goBack();
         });
       } else {
         // Create new recipe
-        const newRecipe = await createRecipeMutation.mutateAsync(recipe);
+        savedRecipe = await createRecipeMutation.mutateAsync(recipe);
         showSuccess('Success', 'Recipe saved successfully!', () => {
           navigation.navigate('RecipeDetail', { 
-            recipeId: newRecipe.id 
+            recipeId: savedRecipe.id 
           });
         });
+      }
+
+      // Upload image if it's a local file
+      if (imageUri && imageUri.startsWith('file://')) {
+        try {
+          // Convert the local URI to a File object for upload
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          const file = new File([blob], 'recipe.jpg', { type: 'image/jpeg' });
+          
+          // Upload the recipe image
+          await uploadRecipeImageMutation.mutateAsync({ 
+            recipeId: savedRecipe.id, 
+            imageFile: file 
+          });
+        } catch (error) {
+          console.error('Failed to upload recipe image:', error);
+          showError('Warning', 'Recipe saved but image upload failed. You can try uploading the image again later.');
+        }
       }
     } catch (error: any) {
       console.error('Failed to save recipe:', error);
