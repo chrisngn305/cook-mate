@@ -17,6 +17,7 @@ import { colors, typography, spacing, borderRadius } from '../theme';
 import { useRecipe, useLikeRecipe } from '../services/hooks';
 import { usePopup } from '../hooks/usePopup';
 import CustomPopup from '../components/CustomPopup';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -60,6 +61,7 @@ export default function RecipeDetailScreen() {
   const { data: recipe, isLoading, error, refetch } = useRecipe(recipeId);
   const likeRecipeMutation = useLikeRecipe();
   const { showSuccess, showError, showWarning, popupConfig, isVisible, hidePopup } = usePopup();
+  const { user } = useAuth();
 
   const [isLiked, setIsLiked] = useState(false);
   const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
@@ -179,7 +181,7 @@ export default function RecipeDetailScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color={colors.error} />
           <Text style={styles.errorText}>Recipe not found</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -205,9 +207,11 @@ export default function RecipeDetailScreen() {
             <TouchableOpacity style={styles.actionButton} onPress={handleAddToShoppingList}>
               <Ionicons name="cart-outline" size={24} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleEditRecipe}>
-              <Ionicons name="create-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
+            {user?.id && recipe?.userId && user.id === recipe.userId && (
+              <TouchableOpacity style={styles.actionButton} onPress={handleEditRecipe}>
+                <Ionicons name="create-outline" size={24} color={colors.text} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
