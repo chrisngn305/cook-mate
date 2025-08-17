@@ -1,5 +1,6 @@
 import { queryClient } from './queryClient';
 import { Platform } from 'react-native';
+import { Recipe as RecipeType } from '../types/recipe';
 
 // Determine the correct API URL based on platform
 const getApiBaseUrl = () => {
@@ -13,8 +14,8 @@ const getApiBaseUrl = () => {
     return 'http://10.0.2.2:3000';
   }
   
-  // For iOS simulator and other platforms, use localhost
-  return 'http://localhost:3000';
+  // For iOS simulator and other platforms, use the IP address
+  return 'http://172.16.11.157:3000';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -24,42 +25,9 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-interface Recipe {
-  id: string;
-  title: string;
-  description: string;
-  cookingTime: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  cuisine: string;
-  image?: string;
-  ingredients: RecipeIngredient[];
-  steps: RecipeStep[];
-  tags: RecipeTag[];
-  views: number;
-  likes: number;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface RecipeIngredient {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-}
-
-interface RecipeStep {
-  id: string;
-  stepNumber: number;
-  description: string;
-}
-
-interface RecipeTag {
-  id: string;
-  name: string;
-  type: string;
-}
+// Use the Recipe type from types/recipe.ts
+export type { Recipe } from '../types/recipe';
+export type { FridgeIngredient, ShoppingList, User, LoginResponse };
 
 interface FridgeIngredient {
   id: string;
@@ -215,11 +183,11 @@ class ApiService {
     });
   }
 
-  async uploadRecipeImage(recipeId: string, imageFile: File): Promise<{ image: string; recipe: any }> {
+  async uploadRecipeImage(recipeId: string, imageFile: File): Promise<{ image: string; recipe: RecipeType }> {
     const formData = new FormData();
     formData.append('image', imageFile);
     
-    return this.request<{ image: string; recipe: any }>(`/recipes/${recipeId}/image`, {
+    return this.request<{ image: string; recipe: RecipeType }>(`/recipes/${recipeId}/image`, {
       method: 'POST',
       body: formData,
       headers: {}, // Let the browser set the Content-Type for FormData
@@ -227,31 +195,31 @@ class ApiService {
   }
 
   // Recipes
-  async getRecipes(filters?: any): Promise<Recipe[]> {
+  async getRecipes(filters?: any): Promise<RecipeType[]> {
     const queryParams = filters ? new URLSearchParams(filters).toString() : '';
     const endpoint = queryParams ? `/recipes?${queryParams}` : '/recipes';
-    return this.request<Recipe[]>(endpoint);
+    return this.request<RecipeType[]>(endpoint);
   }
 
-  async getMyRecipes(filters?: any): Promise<Recipe[]> {
+  async getMyRecipes(filters?: any): Promise<RecipeType[]> {
     const queryParams = filters ? new URLSearchParams(filters).toString() : '';
     const endpoint = queryParams ? `/recipes/my-recipes?${queryParams}` : '/recipes/my-recipes';
-    return this.request<Recipe[]>(endpoint);
+    return this.request<RecipeType[]>(endpoint);
   }
 
-  async getRecipe(id: string): Promise<Recipe> {
-    return this.request<Recipe>(`/recipes/${id}`);
+  async getRecipe(id: string): Promise<RecipeType> {
+    return this.request<RecipeType>(`/recipes/${id}`);
   }
 
-  async createRecipe(recipeData: any): Promise<Recipe> {
-    return this.request<Recipe>('/recipes', {
+  async createRecipe(recipeData: Omit<RecipeType, 'id' | 'createdAt' | 'updatedAt'>): Promise<RecipeType> {
+    return this.request<RecipeType>('/recipes', {
       method: 'POST',
       body: JSON.stringify(recipeData),
     });
   }
 
-  async updateRecipe(id: string, recipeData: any): Promise<Recipe> {
-    return this.request<Recipe>(`/recipes/${id}`, {
+  async updateRecipe(id: string, recipeData: Partial<Omit<RecipeType, 'id' | 'createdAt' | 'updatedAt'>>): Promise<RecipeType> {
+    return this.request<RecipeType>(`/recipes/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(recipeData),
     });
@@ -263,9 +231,9 @@ class ApiService {
     });
   }
 
-  async searchRecipesByIngredients(ingredients: string[]): Promise<Recipe[]> {
+  async searchRecipesByIngredients(ingredients: string[]): Promise<RecipeType[]> {
     const ingredientsParam = ingredients.join(',');
-    return this.request<Recipe[]>(`/recipes/search-by-ingredients?ingredients=${ingredientsParam}`);
+    return this.request<RecipeType[]>(`/recipes/search-by-ingredients?ingredients=${ingredientsParam}`);
   }
 
   async likeRecipe(id: string): Promise<void> {
@@ -386,4 +354,3 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { Recipe, FridgeIngredient, ShoppingList, User, LoginResponse }; 

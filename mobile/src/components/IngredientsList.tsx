@@ -12,13 +12,20 @@ interface IngredientsListProps {
 
 export default function IngredientsList({ ingredients, onIngredientsChange }: IngredientsListProps) {
   const [newIngredient, setNewIngredient] = useState({ name: '', quantity: '', unit: '' });
+  const [quantityError, setQuantityError] = useState('');
 
   const addIngredient = () => {
     if (newIngredient.name.trim() && newIngredient.quantity.trim()) {
+      const quantity = parseFloat(newIngredient.quantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        setQuantityError('Quantity must be a positive number');
+        return;
+      }
+      setQuantityError('');
       const ingredient: Ingredient = {
         id: Date.now().toString(),
         name: newIngredient.name.trim(),
-        quantity: parseFloat(newIngredient.quantity),
+        quantity: quantity,
         unit: newIngredient.unit.trim() || 'units',
       };
       onIngredientsChange([...ingredients, ingredient]);
@@ -67,9 +74,16 @@ export default function IngredientsList({ ingredients, onIngredientsChange }: In
             <FormInput
               label=""
               value={newIngredient.quantity}
-              onChangeText={(text) => setNewIngredient({ ...newIngredient, quantity: text })}
+              onChangeText={(text) => {
+                // Only allow positive numbers and decimals
+                if (text === '' || /^\d*\.?\d*$/.test(text)) {
+                  setNewIngredient({ ...newIngredient, quantity: text });
+                  setQuantityError('');
+                }
+              }}
               placeholder="Qty"
               keyboardType="numeric"
+              error={quantityError}
             />
           </View>
           <View style={[styles.inputGroup, { flex: 1 }]}>

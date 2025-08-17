@@ -22,6 +22,8 @@ import {
 import { useCreateRecipe, useUpdateRecipe, useUploadRecipeImage } from '../services/hooks';
 import { usePopup } from '../hooks/usePopup';
 
+type RecipeInput = Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'>;
+
 export default function AddRecipeScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -31,7 +33,7 @@ export default function AddRecipeScreen() {
   const createRecipeMutation = useCreateRecipe();
   const updateRecipeMutation = useUpdateRecipe();
   const uploadRecipeImageMutation = useUploadRecipeImage();
-  const { showSuccess, showError, popupConfig, isVisible, hidePopup } = usePopup();
+  const { showSuccess, showError, popupConfig, isVisible } = usePopup();
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -54,7 +56,14 @@ export default function AddRecipeScreen() {
       setDifficulty(existingRecipe.difficulty);
       setCuisine(existingRecipe.cuisine || '');
       setImageUri(existingRecipe.image || null);
-      setIngredients(existingRecipe.ingredients);
+      
+      // Ensure ingredient quantities are numbers
+      const normalizedIngredients = existingRecipe.ingredients.map(ing => ({
+        ...ing,
+        quantity: typeof ing.quantity === 'string' ? parseFloat(ing.quantity) : ing.quantity
+      }));
+      setIngredients(normalizedIngredients);
+      
       setSteps(existingRecipe.steps);
     }
   }, [isEditMode, existingRecipe]);
@@ -75,11 +84,17 @@ export default function AddRecipeScreen() {
 
     setIsSaving(true);
 
-    const recipe: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt'> = {
+    // Ensure all ingredient quantities are numbers
+    const normalizedIngredients = ingredients.map(ing => ({
+      ...ing,
+      quantity: typeof ing.quantity === 'string' ? parseFloat(ing.quantity) : ing.quantity
+    }));
+
+    const recipe: RecipeInput = {
       title: title.trim(),
       description: description.trim(),
       image: imageUri || undefined,
-      ingredients,
+      ingredients: normalizedIngredients,
       steps,
       tags: [],
       cookingTime: parseInt(cookingTime) || 0,
@@ -92,7 +107,7 @@ export default function AddRecipeScreen() {
     };
 
     try {
-      let savedRecipe;
+      let savedRecipe: Recipe;
       
       if (isEditMode) {
         // Update existing recipe
@@ -266,4 +281,4 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
-}); 
+});

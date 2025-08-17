@@ -22,11 +22,14 @@ export class RecipeIngredient {
   order: number;
 
   // Relations
-  @ManyToOne(() => Recipe, recipe => recipe.ingredients, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Recipe, recipe => recipe.ingredients, {
+    onDelete: 'CASCADE',
+    nullable: false
+  })
   @JoinColumn({ name: 'recipeId' })
   recipe: Recipe;
 
-  @Column()
+  @Column({ nullable: false })
   recipeId: string;
 
   @CreateDateColumn()

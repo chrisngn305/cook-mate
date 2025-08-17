@@ -73,10 +73,16 @@ export class Recipe {
   @Column()
   userId: string;
 
-  @OneToMany(() => RecipeIngredient, ingredient => ingredient.recipe, { cascade: true })
+  @OneToMany(() => RecipeIngredient, ingredient => ingredient.recipe, {
+    cascade: true,
+    eager: true
+  })
   ingredients: RecipeIngredient[];
 
-  @OneToMany(() => RecipeStep, step => step.recipe, { cascade: true })
+  @OneToMany(() => RecipeStep, step => step.recipe, {
+    cascade: true,
+    eager: true
+  })
   steps: RecipeStep[];
 
   @ManyToMany(() => RecipeTag)

@@ -19,11 +19,14 @@ export class RecipeStep {
   time?: number; // in minutes
 
   // Relations
-  @ManyToOne(() => Recipe, recipe => recipe.steps, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Recipe, recipe => recipe.steps, {
+    onDelete: 'CASCADE',
+    nullable: false
+  })
   @JoinColumn({ name: 'recipeId' })
   recipe: Recipe;
 
-  @Column()
+  @Column({ nullable: false })
   recipeId: string;
 
   @CreateDateColumn()

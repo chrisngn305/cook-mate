@@ -129,11 +129,11 @@ export class SeederService {
         season: ['all year'],
         isPublic: true,
         ingredients: [
-          { name: 'Spaghetti', quantity: 400, unit: 'g', order: 1 },
-          { name: 'Eggs', quantity: 4, unit: 'pieces', order: 2 },
-          { name: 'Parmesan cheese', quantity: 100, unit: 'g', order: 3 },
-          { name: 'Pancetta', quantity: 150, unit: 'g', order: 4 },
-          { name: 'Black pepper', quantity: 2, unit: 'tsp', order: 5 },
+          { name: 'Spaghetti', quantity: 400.0, unit: 'g', order: 1 },
+          { name: 'Eggs', quantity: 4.0, unit: 'pieces', order: 2 },
+          { name: 'Parmesan cheese', quantity: 100.0, unit: 'g', order: 3 },
+          { name: 'Pancetta', quantity: 150.0, unit: 'g', order: 4 },
+          { name: 'Black pepper', quantity: 2.0, unit: 'tsp', order: 5 },
         ],
         steps: [
           { order: 1, description: 'Bring a large pot of salted water to boil', time: 5 },
@@ -156,11 +156,11 @@ export class SeederService {
         season: ['all year'],
         isPublic: true,
         ingredients: [
-          { name: 'Chicken breast', quantity: 500, unit: 'g', order: 1 },
-          { name: 'Broccoli', quantity: 300, unit: 'g', order: 2 },
-          { name: 'Soy sauce', quantity: 60, unit: 'ml', order: 3 },
-          { name: 'Ginger', quantity: 2, unit: 'tbsp', order: 4 },
-          { name: 'Garlic', quantity: 4, unit: 'cloves', order: 5 },
+          { name: 'Chicken breast', quantity: 500.0, unit: 'g', order: 1 },
+          { name: 'Broccoli', quantity: 300.0, unit: 'g', order: 2 },
+          { name: 'Soy sauce', quantity: 60.0, unit: 'ml', order: 3 },
+          { name: 'Ginger', quantity: 2.0, unit: 'tbsp', order: 4 },
+          { name: 'Garlic', quantity: 4.0, unit: 'cloves', order: 5 },
         ],
         steps: [
           { order: 1, description: 'Cut chicken into bite-sized pieces', time: 5 },
@@ -182,11 +182,11 @@ export class SeederService {
         season: ['winter', 'fall'],
         isPublic: true,
         ingredients: [
-          { name: 'Beef chuck', quantity: 1000, unit: 'g', order: 1 },
-          { name: 'Potatoes', quantity: 500, unit: 'g', order: 2 },
-          { name: 'Carrots', quantity: 300, unit: 'g', order: 3 },
-          { name: 'Onions', quantity: 200, unit: 'g', order: 4 },
-          { name: 'Beef broth', quantity: 1000, unit: 'ml', order: 5 },
+          { name: 'Beef chuck', quantity: 1000.0, unit: 'g', order: 1 },
+          { name: 'Potatoes', quantity: 500.0, unit: 'g', order: 2 },
+          { name: 'Carrots', quantity: 300.0, unit: 'g', order: 3 },
+          { name: 'Onions', quantity: 200.0, unit: 'g', order: 4 },
+          { name: 'Beef broth', quantity: 1000.0, unit: 'ml', order: 5 },
         ],
         steps: [
           { order: 1, description: 'Cut beef into cubes and season with salt and pepper', time: 10 },
@@ -207,11 +207,11 @@ export class SeederService {
         season: ['all year'],
         isPublic: true,
         ingredients: [
-          { name: 'Pizza dough', quantity: 1, unit: 'piece', order: 1 },
-          { name: 'Tomato sauce', quantity: 200, unit: 'ml', order: 2 },
-          { name: 'Mozzarella', quantity: 200, unit: 'g', order: 3 },
-          { name: 'Fresh basil', quantity: 20, unit: 'g', order: 4 },
-          { name: 'Olive oil', quantity: 30, unit: 'ml', order: 5 },
+          { name: 'Pizza dough', quantity: 1.0, unit: 'piece', order: 1 },
+          { name: 'Tomato sauce', quantity: 200.0, unit: 'ml', order: 2 },
+          { name: 'Mozzarella', quantity: 200.0, unit: 'g', order: 3 },
+          { name: 'Fresh basil', quantity: 20.0, unit: 'g', order: 4 },
+          { name: 'Olive oil', quantity: 30.0, unit: 'ml', order: 5 },
         ],
         steps: [
           { order: 1, description: 'Preheat oven to 450°F (230°C)', time: 10 },
@@ -233,12 +233,12 @@ export class SeederService {
         season: ['all year'],
         isPublic: true,
         ingredients: [
-          { name: 'All-purpose flour', quantity: 300, unit: 'g', order: 1 },
-          { name: 'Cocoa powder', quantity: 60, unit: 'g', order: 2 },
-          { name: 'Sugar', quantity: 400, unit: 'g', order: 3 },
-          { name: 'Eggs', quantity: 4, unit: 'pieces', order: 4 },
-          { name: 'Milk', quantity: 240, unit: 'ml', order: 5 },
-          { name: 'Vegetable oil', quantity: 120, unit: 'ml', order: 6 },
+          { name: 'All-purpose flour', quantity: 300.0, unit: 'g', order: 1 },
+          { name: 'Cocoa powder', quantity: 60.0, unit: 'g', order: 2 },
+          { name: 'Sugar', quantity: 400.0, unit: 'g', order: 3 },
+          { name: 'Eggs', quantity: 4.0, unit: 'pieces', order: 4 },
+          { name: 'Milk', quantity: 240.0, unit: 'ml', order: 5 },
+          { name: 'Vegetable oil', quantity: 120.0, unit: 'ml', order: 6 },
         ],
         steps: [
           { order: 1, description: 'Preheat oven to 350°F (175°C) and grease cake pans', time: 10 },
@@ -288,16 +288,16 @@ export class SeederService {
 
   private async createFridgeIngredients(user: User): Promise<void> {
     const ingredients = [
-      { name: 'tomatoes', quantity: 6, unit: 'pieces' },
-      { name: 'onions', quantity: 3, unit: 'pieces' },
-      { name: 'chicken', quantity: 500, unit: 'g' },
-      { name: 'garlic', quantity: 10, unit: 'cloves' },
-      { name: 'olive oil', quantity: 200, unit: 'ml' },
-      { name: 'bread', quantity: 1, unit: 'loaf' },
-      { name: 'eggs', quantity: 12, unit: 'pieces' },
-      { name: 'milk', quantity: 1000, unit: 'ml' },
-      { name: 'cheese', quantity: 200, unit: 'g' },
-      { name: 'butter', quantity: 250, unit: 'g' },
+      { name: 'tomatoes', quantity: 6.0, unit: 'pieces' },
+      { name: 'onions', quantity: 3.0, unit: 'pieces' },
+      { name: 'chicken', quantity: 500.0, unit: 'g' },
+      { name: 'garlic', quantity: 10.0, unit: 'cloves' },
+      { name: 'olive oil', quantity: 200.0, unit: 'ml' },
+      { name: 'bread', quantity: 1.0, unit: 'loaf' },
+      { name: 'eggs', quantity: 12.0, unit: 'pieces' },
+      { name: 'milk', quantity: 1000.0, unit: 'ml' },
+      { name: 'cheese', quantity: 200.0, unit: 'g' },
+      { name: 'butter', quantity: 250.0, unit: 'g' },
     ];
 
     const fridgeIngredients = ingredients.map(ingredient => 
@@ -315,19 +315,19 @@ export class SeederService {
       {
         name: 'Weekly Groceries',
         items: [
-          { name: 'Tomatoes', quantity: 4, unit: 'pieces', isCompleted: false },
-          { name: 'Onions', quantity: 2, unit: 'pieces', isCompleted: true },
-          { name: 'Chicken breast', quantity: 500, unit: 'g', isCompleted: false },
-          { name: 'Pasta', quantity: 250, unit: 'g', isCompleted: false },
+          { name: 'Tomatoes', quantity: 4.0, unit: 'pieces', isCompleted: false },
+          { name: 'Onions', quantity: 2.0, unit: 'pieces', isCompleted: true },
+          { name: 'Chicken breast', quantity: 500.0, unit: 'g', isCompleted: false },
+          { name: 'Pasta', quantity: 250.0, unit: 'g', isCompleted: false },
         ],
       },
       {
         name: 'Party Shopping',
         items: [
-          { name: 'Pizza dough', quantity: 2, unit: 'pieces', isCompleted: false },
-          { name: 'Mozzarella', quantity: 400, unit: 'g', isCompleted: false },
-          { name: 'Tomato sauce', quantity: 400, unit: 'ml', isCompleted: false },
-          { name: 'Fresh basil', quantity: 40, unit: 'g', isCompleted: false },
+          { name: 'Pizza dough', quantity: 2.0, unit: 'pieces', isCompleted: false },
+          { name: 'Mozzarella', quantity: 400.0, unit: 'g', isCompleted: false },
+          { name: 'Tomato sauce', quantity: 400.0, unit: 'ml', isCompleted: false },
+          { name: 'Fresh basil', quantity: 40.0, unit: 'g', isCompleted: false },
         ],
       },
     ];

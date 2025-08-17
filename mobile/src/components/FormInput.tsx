@@ -6,9 +6,10 @@ interface FormInputProps extends TextInputProps {
   label: string;
   required?: boolean;
   right?: React.ReactNode;
+  error?: string;
 }
 
-export default function FormInput({ label, required = false, style, right, ...props }: FormInputProps) {
+export default function FormInput({ label, required = false, style, right, error, ...props }: FormInputProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
@@ -16,7 +17,7 @@ export default function FormInput({ label, required = false, style, right, ...pr
       </Text>
       <View style={styles.inputContainer}>
         <TextInput
-          style={[styles.input, style]}
+          style={[styles.input, style, error ? styles.inputError : null]}
           placeholderTextColor={colors.inputPlaceholder}
           {...props}
         />
@@ -26,6 +27,7 @@ export default function FormInput({ label, required = false, style, right, ...pr
           </View>
         )}
       </View>
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -63,5 +65,13 @@ const styles = StyleSheet.create({
   },
   rightContainer: {
     paddingHorizontal: spacing.md,
+  },
+  inputError: {
+    borderColor: colors.error,
+  },
+  errorText: {
+    ...typography.bodySmall,
+    color: colors.error,
+    marginTop: spacing.xs,
   },
 }); 
