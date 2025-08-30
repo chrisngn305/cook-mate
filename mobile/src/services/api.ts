@@ -93,6 +93,17 @@ class ApiService {
     return API_BASE_URL;
   }
 
+  getFullUrl(path: string | null): string | null {
+    if (!path) return null;
+    // If the path is already a full URL, return it as is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // If it's a relative path starting with /, remove the / to avoid double slashes
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    return `${API_BASE_URL}/${cleanPath}`;
+  }
+
   clearToken() {
     this.token = null;
   }
@@ -148,7 +159,11 @@ class ApiService {
   }
 
   async getProfile(): Promise<User> {
-    return this.request<User>('/users/profile');
+    const user = await this.request<User>('/users/profile');
+    if (user.avatar) {
+      user.avatar = this.getFullUrl(user.avatar) || user.avatar;
+    }
+    return user;
   }
 
   async updateProfile(profileData: Partial<User>): Promise<User> {
@@ -172,25 +187,48 @@ class ApiService {
     });
   }
 
-  async uploadAvatarImage(imageFile: File): Promise<{ avatar: string; user: User }> {
+  async uploadAvatarImage(imageUri: string | File): Promise<{ avatar: string; user: User }> {
     const formData = new FormData();
-    formData.append('avatar', imageFile);
     
-    return this.request<{ avatar: string; user: User }>('/users/profile/avatar/upload', {
+    // Create the file object in a React Native compatible way
+    formData.append('avatar', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'avatar.jpg',
+    } as any);
+    
+    const response = await this.request<{ avatar: string; user: User }>('/users/profile/avatar/upload', {
       method: 'POST',
       body: formData,
-      headers: {}, // Let the browser set the Content-Type for FormData
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
+
+    // Update the avatar URL to include the full path
+    if (response.user.avatar) {
+      response.user.avatar = this.getFullUrl(response.user.avatar) || response.user.avatar;
+    }
+    
+    return response;
   }
 
-  async uploadRecipeImage(recipeId: string, imageFile: File): Promise<{ image: string; recipe: RecipeType }> {
+  async uploadRecipeImage(recipeId: string, imageUri: string): Promise<{ image: string; recipe: RecipeType }> {
     const formData = new FormData();
-    formData.append('image', imageFile);
+    
+    // Create the file object in a React Native compatible way
+    formData.append('image', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'recipe.jpg',
+    } as any);
     
     return this.request<{ image: string; recipe: RecipeType }>(`/recipes/${recipeId}/image`, {
       method: 'POST',
       body: formData,
-      headers: {}, // Let the browser set the Content-Type for FormData
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
   }
 

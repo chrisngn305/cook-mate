@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../theme';
+import { apiService } from '../services/api';
 
 interface AvatarProps {
   source?: string | null;
@@ -66,7 +67,11 @@ export default function Avatar({
   return (
     <View style={avatarStyles}>
       <Image
-        source={{ uri: source }}
+        source={{ 
+          uri: source.startsWith('file://') || source.startsWith('content://') 
+            ? source 
+            : apiService.getFullUrl(source) || undefined 
+        }}
         style={imageStyles}
         onError={handleImageError}
         onLoad={() => setImageError(false)}

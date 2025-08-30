@@ -57,16 +57,11 @@ export default function EditProfileScreen() {
             // Update profile using React Query mutation
       await updateProfileMutation.mutateAsync(updateData);
 
-      // Update avatar if changed
-      if (profileImage && profileImage.startsWith('file://')) {
+      // Update avatar if changed and is a local file
+      if (profileImage && (profileImage.startsWith('file://') || profileImage.startsWith('content://'))) {
         try {
-          // Convert the local URI to a File object for upload
-          const response = await fetch(profileImage);
-          const blob = await response.blob();
-          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
-          
-          // Upload the avatar image
-          await uploadAvatarMutation.mutateAsync(file);
+          // Upload the avatar image using the local URI
+          await uploadAvatarMutation.mutateAsync(profileImage);
         } catch (error) {
           console.error('Failed to upload avatar:', error);
           showError('Error', 'Failed to upload avatar image');
@@ -107,7 +102,9 @@ export default function EditProfileScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setProfileImage(result.assets[0].uri);
+        const selectedImageUri = result.assets[0].uri;
+        // Update the profile image preview immediately with the local file URI
+        setProfileImage(selectedImageUri);
       }
     } catch (error) {
       showError('Error', 'Failed to pick image. Please try again.');

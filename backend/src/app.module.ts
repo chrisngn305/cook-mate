@@ -41,10 +41,13 @@ import { FileUploadModule } from './common/services/file-upload.module';
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
       serveStaticOptions: {
         index: false,
+        fallthrough: false,
+        etag: true,
+        lastModified: true,
       },
     }),
     PassportModule,

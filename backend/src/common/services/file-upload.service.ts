@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class FileUploadService {
-  private readonly uploadsDir = 'uploads';
+  private readonly uploadsDir = join(process.cwd(), 'uploads');
   private readonly recipesDir = 'recipes';
   private readonly avatarsDir = 'avatars';
 
@@ -39,7 +39,7 @@ export class FileUploadService {
     await writeFile(filePath, file.buffer);
 
     // Return the relative path for storage in database
-    return `${this.recipesDir}/${fileName}`;
+    return `uploads/${this.recipesDir}/${fileName}`;
   }
 
   async uploadAvatarImage(file: Express.Multer.File): Promise<string> {
@@ -54,7 +54,7 @@ export class FileUploadService {
     }
 
     // Validate file size (2MB limit for avatars)
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 5 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
       throw new BadRequestException('File too large. Maximum size is 2MB.');
     }
@@ -72,12 +72,12 @@ export class FileUploadService {
     await writeFile(filePath, file.buffer);
 
     // Return the relative path for storage in database
-    return `${this.avatarsDir}/${fileName}`;
+    return `uploads/${this.avatarsDir}/${fileName}`;
   }
 
   getFileUrl(filePath: string): string | null {
     if (!filePath) return null;
-    // Return the full URL path for the uploaded file
-    return `/uploads/${filePath}`;
+    // Always return the path with /uploads prefix
+    return `/${filePath}`;
   }
 } 
