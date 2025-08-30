@@ -56,7 +56,7 @@ coverage/
 *.db
 
 # Uploaded files
-uploads/avatars/*
-uploads/recipes/*
-!uploads/avatars/.gitkeep
-!uploads/recipes/.gitkeep 
+backend/uploads/avatars/*
+backend/uploads/recipes/*
+!backend/uploads/avatars/.gitkeep
+!backend/uploads/recipes/.gitkeep 
