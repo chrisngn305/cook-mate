@@ -53,4 +53,10 @@ coverage/
 
 # Database
 *.sqlite
-*.db 
+*.db
+
+# Uploaded files
+uploads/avatars/*
+uploads/recipes/*
+!uploads/avatars/.gitkeep
+!uploads/recipes/.gitkeep 
