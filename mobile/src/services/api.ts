@@ -232,35 +232,51 @@ class ApiService {
     });
   }
 
+  private transformRecipe(recipe: RecipeType): RecipeType {
+    return {
+      ...recipe,
+      image: recipe.image ? this.getFullUrl(recipe.image) || undefined : undefined,
+    };
+  }
+
+  private transformRecipes(recipes: RecipeType[]): RecipeType[] {
+    return recipes.map(recipe => this.transformRecipe(recipe));
+  }
+
   // Recipes
   async getRecipes(filters?: any): Promise<RecipeType[]> {
     const queryParams = filters ? new URLSearchParams(filters).toString() : '';
     const endpoint = queryParams ? `/recipes?${queryParams}` : '/recipes';
-    return this.request<RecipeType[]>(endpoint);
+    const recipes = await this.request<RecipeType[]>(endpoint);
+    return this.transformRecipes(recipes);
   }
 
   async getMyRecipes(filters?: any): Promise<RecipeType[]> {
     const queryParams = filters ? new URLSearchParams(filters).toString() : '';
     const endpoint = queryParams ? `/recipes/my-recipes?${queryParams}` : '/recipes/my-recipes';
-    return this.request<RecipeType[]>(endpoint);
+    const recipes = await this.request<RecipeType[]>(endpoint);
+    return this.transformRecipes(recipes);
   }
 
   async getRecipe(id: string): Promise<RecipeType> {
-    return this.request<RecipeType>(`/recipes/${id}`);
+    const recipe = await this.request<RecipeType>(`/recipes/${id}`);
+    return this.transformRecipe(recipe);
   }
 
   async createRecipe(recipeData: Omit<RecipeType, 'id' | 'createdAt' | 'updatedAt'>): Promise<RecipeType> {
-    return this.request<RecipeType>('/recipes', {
+    const recipe = await this.request<RecipeType>('/recipes', {
       method: 'POST',
       body: JSON.stringify(recipeData),
     });
+    return this.transformRecipe(recipe);
   }
 
   async updateRecipe(id: string, recipeData: Partial<Omit<RecipeType, 'id' | 'createdAt' | 'updatedAt'>>): Promise<RecipeType> {
-    return this.request<RecipeType>(`/recipes/${id}`, {
+    const recipe = await this.request<RecipeType>(`/recipes/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(recipeData),
     });
+    return this.transformRecipe(recipe);
   }
 
   async deleteRecipe(id: string): Promise<void> {
@@ -271,7 +287,8 @@ class ApiService {
 
   async searchRecipesByIngredients(ingredients: string[]): Promise<RecipeType[]> {
     const ingredientsParam = ingredients.join(',');
-    return this.request<RecipeType[]>(`/recipes/search-by-ingredients?ingredients=${ingredientsParam}`);
+    const recipes = await this.request<RecipeType[]>(`/recipes/search-by-ingredients?ingredients=${ingredientsParam}`);
+    return this.transformRecipes(recipes);
   }
 
   async likeRecipe(id: string): Promise<void> {

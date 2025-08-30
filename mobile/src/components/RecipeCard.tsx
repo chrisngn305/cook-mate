@@ -1,15 +1,33 @@
 import React from 'react';
+import type { NativeSyntheticEvent, ImageErrorEventData } from 'react-native';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Image,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../theme';
+import { apiService } from '../services/api';
+
+type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+interface Recipe {
+  id: string;
+  title: string;
+  description?: string;
+  image?: string;
+  cookingTime: number;
+  difficulty: DifficultyLevel;
+}
+
+type StyleKey = keyof typeof styles;
+type DifficultyStyle = `difficulty${Capitalize<DifficultyLevel>}`;
 
 interface RecipeCardProps {
-  recipe: any;
+  recipe: Recipe;
   onPress: () => void;
   horizontal?: boolean;
 }
@@ -23,7 +41,14 @@ export default function RecipeCard({ recipe, onPress, horizontal = false }: Reci
       >
         <View style={styles.recipeImageHorizontal}>
           {recipe.image ? (
-            <Ionicons name="image" size={32} color={colors.primary} />
+            <>
+              {console.log('Loading recipe image:', recipe.image)}
+              <Image 
+                source={{ uri: recipe.image }}
+                style={styles.imageBackground}
+                onError={(error: NativeSyntheticEvent<ImageErrorEventData>) => console.log('Recipe image failed to load:', error.nativeEvent.error)}
+              />
+            </>
           ) : (
             <Ionicons name="restaurant" size={32} color={colors.primary} />
           )}
@@ -34,7 +59,7 @@ export default function RecipeCard({ recipe, onPress, horizontal = false }: Reci
           </View>
           
           {/* Difficulty Badge */}
-          <View style={[styles.difficultyBadge, styles[`difficulty${recipe.difficulty?.charAt(0).toUpperCase() + recipe.difficulty?.slice(1)}`]]}>
+          <View style={[styles.difficultyBadge, styles[`difficulty${recipe.difficulty.charAt(0).toUpperCase() + recipe.difficulty.slice(1)}` as DifficultyStyle]]}>
             <Text style={styles.badgeText}>{recipe.difficulty}</Text>
           </View>
         </View>
@@ -60,8 +85,15 @@ export default function RecipeCard({ recipe, onPress, horizontal = false }: Reci
       onPress={onPress}
     >
       <View style={styles.recipeImage}>
-        {recipe.image ? (
-          <Ionicons name="image" size={32} color={colors.primary} />
+                {recipe.image ? (
+          <>
+            {console.log('Loading recipe image:', recipe.image)}
+            <Image 
+              source={{ uri: recipe.image }}
+              style={styles.imageSquare}
+              onError={(error: NativeSyntheticEvent<ImageErrorEventData>) => console.log('Recipe image failed to load:', error.nativeEvent.error)}
+            />
+          </>
         ) : (
           <Ionicons name="restaurant" size={32} color={colors.primary} />
         )}
@@ -85,6 +117,18 @@ export default function RecipeCard({ recipe, onPress, horizontal = false }: Reci
 }
 
 const styles = StyleSheet.create({
+  imageBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imageSquare: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: borderRadius.md,
+  },
   // Vertical layout styles (original)
   recipeCard: {
     flexDirection: 'row',
