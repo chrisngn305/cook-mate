@@ -95,9 +95,13 @@ class ApiService {
 
   getFullUrl(path: string | null): string | null {
     if (!path) return null;
-    // If the path is already a full URL, return it as is
+    // If the path is already an http/https URL, return it as is
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
+    }
+    // If it's a file:// URL, extract the path part
+    if (path.startsWith('file://')) {
+      path = path.substring(path.lastIndexOf('/') + 1);
     }
     // If it's a relative path starting with /, remove the / to avoid double slashes
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
@@ -216,20 +220,27 @@ class ApiService {
   async uploadRecipeImage(recipeId: string, imageUri: string): Promise<{ image: string; recipe: RecipeType }> {
     const formData = new FormData();
     
-    // Create the file object in a React Native compatible way
+    // Handle React Native file upload
     formData.append('image', {
       uri: imageUri,
       type: 'image/jpeg',
       name: 'recipe.jpg',
     } as any);
     
-    return this.request<{ image: string; recipe: RecipeType }>(`/recipes/${recipeId}/image`, {
+    const response = await this.request<{ image: string; recipe: RecipeType }>(`/recipes/${recipeId}/image`, {
       method: 'POST',
       body: formData,
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    
+    // Transform the recipe image URL
+    if (response.recipe && response.recipe.image) {
+      response.recipe.image = this.getFullUrl(response.recipe.image) || response.recipe.image;
+    }
+    
+    return response;
   }
 
   private transformRecipe(recipe: RecipeType): RecipeType {

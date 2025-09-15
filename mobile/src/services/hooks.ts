@@ -320,7 +320,7 @@ export const useUploadRecipeImage = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ recipeId, imageFile }: { recipeId: string; imageFile: File }) =>
+    mutationFn: ({ recipeId, imageFile }: { recipeId: string; imageFile: string }) =>
       apiService.uploadRecipeImage(recipeId, imageFile),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] });

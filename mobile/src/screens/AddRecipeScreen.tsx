@@ -128,15 +128,10 @@ export default function AddRecipeScreen() {
       // Upload image if it's a local file
       if (imageUri && imageUri.startsWith('file://')) {
         try {
-          // Convert the local URI to a File object for upload
-          const response = await fetch(imageUri);
-          const blob = await response.blob();
-          const file = new File([blob], 'recipe.jpg', { type: 'image/jpeg' });
-          
           // Upload the recipe image
           await uploadRecipeImageMutation.mutateAsync({ 
             recipeId: savedRecipe.id, 
-            imageFile: file 
+            imageFile: imageUri 
           });
         } catch (error) {
           console.error('Failed to upload recipe image:', error);
